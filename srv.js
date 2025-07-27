@@ -8,8 +8,9 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config();
 
-// --- Plus besoin de BASE_WEB_APP_URL puisque l'application web est retirée ---
-// const BASE_WEB_APP_URL = 'https://ia-local.github.io/Manifest.910-2025';
+// --- URLs Spécifiques ---
+const TELEGRAM_WEB_APP_URL = 'https://t.me/Pi_ia_Pibot/Manifest_910'; // L'URL de votre Telegram Web App
+const TELEGRAM_GROUP_LINK = 'https://t.me/+g-v07WePo0cyMmQ0'; // L'URL de votre salon Telegram (groupe/canal)
 
 // Initialisation des variables de rôles (avec valeurs par défaut pour la robustesse)
 let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
@@ -42,25 +43,22 @@ try {
 
 } catch (error) {
     console.error('Erreur lors du chargement des fichiers de rôles Groq. Assurez-vous que les fichiers existent et sont valides JSON:', error);
-    // Les valeurs par défaut seront utilisées si les fichiers ne peuvent pas être lus
 }
 
 // --- Configuration du Serveur Express (pour les stats ou futures APIs bot-spécifiques) ---
 const app = express();
-const BOT_SERVER_PORT = process.env.BOT_SERVER_PORT || 3001; // Port différent du serveur Web principal (ex: 3000 ou 5007)
+const BOT_SERVER_PORT = process.env.BOT_SERVER_PORT || 3001;
 
 app.use(bodyParser.json());
-app.use(cors()); // CORS ouvert pour le dev, à restreindre en production si utilisé par un frontend séparé
+app.use(cors());
 
-// IMPORTANT : Assurez-vous que le dossier 'data' existe à la racine de votre script Telegram
-// Ex: data/stats.json et data/polls.json
 const STATS_FILE = path.join(__dirname, 'data', 'stats.json');
-const POLLS_FILE = path.join(__dirname, 'data', 'polls.json'); // Nouveau fichier pour les sondages
+const POLLS_FILE = path.join(__dirname, 'data', 'polls.json');
 
 // --- Fonctions de lecture/écriture pour les statistiques et les sondages ---
 async function readJsonFile(filePath, defaultValue = {}) {
     try {
-        await fs.promises.mkdir(path.dirname(filePath), { recursive: true }); // Crée le dossier si inexistant
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
         const data = await fs.promises.readFile(filePath, 'utf8');
         return JSON.parse(data);
     } catch (error) {
@@ -76,7 +74,7 @@ async function readJsonFile(filePath, defaultValue = {}) {
 
 async function writeJsonFile(filePath, data) {
     try {
-        await fs.promises.mkdir(path.dirname(filePath), { recursive: true }); // Crée le dossier si inexistant
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
         await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
         console.error(`Erreur d'écriture du fichier ${filePath}:`, error);
@@ -90,8 +88,7 @@ const bot = new Telegraf('7281441282:AAGmRKFY2yDZ0BlkSW0hZpMWSLwsiTRYYCQ', {
     },
   });
 
-const ORGANIZER_GROUP_ID = process.env.ORGANIZER_GROUP_ID; // ID du groupe où envoyer les sujets/messages importants
-// Les IDs des administrateurs pour les commandes restreintes (ex: /create_poll)
+const ORGANIZER_GROUP_ID = process.env.ORGANIZER_GROUP_ID;
 const ADMIN_IDS = process.env.TELEGRAM_ADMIN_IDS ? process.env.TELEGRAM_ADMIN_IDS.split(',').map(Number) : [];
 
 // Gestionnaire d'erreurs global pour Telegraf
@@ -143,8 +140,8 @@ bot.start(async (ctx) => {
         [Markup.button.callback('📜 Le Manifeste', 'show_manifesto')],
         [Markup.button.callback('🗳️ S\'engager (RIC/Pétitions)', 'engage_menu')],
         [Markup.button.callback('✊ Infos Grève 10 Sept.', 'strike_info')],
+        [Markup.button.webApp('🚀 Lancer l\'Application Web', TELEGRAM_WEB_APP_URL)], // Réintroduction du bouton Web App
         [Markup.button.callback('📊 Participer aux Sondages', 'show_polls')],
-        // Le bouton pour l'application web est supprimé
         [Markup.button.callback('❓ Aide & Commandes', 'show_help')]
     ]);
 
@@ -156,11 +153,10 @@ bot.action('engage_menu', async (ctx) => {
     await ctx.answerCbQuery();
     const engageMessage = `Choisissez comment vous souhaitez vous engager :\n\n` +
                           `✅ **Signer la Pétition RIC :** Le Référendum d'Initiative Citoyenne est au cœur de nos demandes. Participez à nos sondages réguliers sur le sujet, ou lancez la commande /ric pour en savoir plus.\n\n` +
-                          `⚖️ **Soutenir la Procédure de Destitution :** Nous visons la responsabilisation des élus. Utilisez la commande /destitution pour comprendre l'Article 68 et nos actions.\n\n` +
+                          `⚖️ **Soutien à la Procédure de Destitution :** Nous visons la responsabilisation des élus. Utilisez la commande /destitution pour comprendre l'Article 68 et nos actions.\n\n` +
                           `💬 **Jugement Majoritaire & Justice Sociale :** Explorez nos propositions pour une démocratie plus juste. Vous pouvez poser des questions à l'IA ou utiliser la commande /manifeste pour plus de détails sur nos objectifs de justice sociale.`;
                           
     const inlineKeyboard = Markup.inlineKeyboard([
-        // Les boutons Markup.button.url sont remplacés par des boutons callback ou simplement des instructions textuelles
         [Markup.button.callback('En savoir plus sur le RIC', 'ric_info_from_engage')],
         [Markup.button.callback('En savoir plus sur la Destitution', 'destitution_info_from_engage')],
         [Markup.button.callback('Retour au menu principal', 'start_menu')]
@@ -171,13 +167,11 @@ bot.action('engage_menu', async (ctx) => {
 // Actions spécifiques pour les informations RIC/Destitution via le menu d'engagement
 bot.action('ric_info_from_engage', async (ctx) => {
     await ctx.answerCbQuery();
-    // Appelle la même logique que la commande /ric
     await bot.telegram.sendMessage(ctx.chat.id, await getRicInfoMarkdown(), { parse_mode: 'Markdown' });
 });
 
 bot.action('destitution_info_from_engage', async (ctx) => {
     await ctx.answerCbQuery();
-    // Appelle la même logique que la commande /destitution
     await bot.telegram.sendMessage(ctx.chat.id, await getDestitutionInfoMarkdown(), { parse_mode: 'Markdown' });
 });
 
@@ -185,7 +179,7 @@ bot.action('destitution_info_from_engage', async (ctx) => {
 // Action pour retourner au menu principal (pour le bouton "Retour")
 bot.action('start_menu', async (ctx) => {
     await ctx.answerCbQuery();
-    await bot.start(ctx); // Simule la commande /start pour réafficher le menu principal
+    await bot.start(ctx);
 });
 
 bot.action('show_manifesto', async (ctx) => {
@@ -198,7 +192,7 @@ Notre mouvement est né de la conviction que la République doit retrouver ses v
 \n4.  **Une véritable transition écologique** qui ne laisse personne de côté, financée par la justice fiscale.
 \n5.  **La fin de l'impunité** et la responsabilisation des élites économiques et politiques.
 
-\n\nPour le manifeste complet et toutes nos propositions, interrogez l'IA ou explorez les commandes /manifeste, /ric, /destitution.
+\nPour le manifeste complet et toutes nos propositions, interrogez l'IA ou explorez les commandes /manifeste, /ric, /destitution.
 `;
     await ctx.replyWithMarkdown(manifestoContent);
 });
@@ -207,11 +201,13 @@ bot.action('strike_info', async (ctx) => {
     await ctx.answerCbQuery();
     const strikeInfo = `**Informations Clés sur la Grève Générale du 10 Septembre 2025 :**
 \nNous appelons à une mobilisation massive dans toute la France.
-\n* **Date :** Mercredi 10 Septembre 2025.
-\n* **Type d'action :** Grève Générale interprofessionnelle et manifestations citoyennes.
-\n* **Objectifs :** Exiger l'instauration du RIC, la justice fiscale et sociale, la responsabilisation des élus.
-\n\nDes points de rassemblement spécifiques seront communiqués dans les semaines à venir via ce bot et nos canaux de communication officiels Telegram. Restez connectés !
-\n\nPartagez l'information et organisez-vous localement ! Votre participation est essentielle.
+\n\* **Date :** Mercredi 10 Septembre 2025.
+\n\* **Type d'action :** Grève Générale interprofessionnelle et manifestations citoyennes.
+\n\* **Objectifs :** Exiger l'instauration du RIC, la justice fiscale et sociale, la responsabilisation des élus.
+
+\nDes points de rassemblement spécifiques seront communiqués dans les semaines à venir via ce bot et nos canaux de communication officiels Telegram. Restez connectés !
+
+\nPartagez l'information et organisez-vous localement ! Votre participation est essentielle.
 `;
     await ctx.replyWithMarkdown(strikeInfo);
 });
@@ -226,7 +222,8 @@ bot.action('show_help', async (ctx) => {
 /greve - Infos pratiques sur la Grève du 10 Septembre 2025
 /sondage - Participer aux sondages d'opinion du mouvement
 /petition - Accéder aux pétitions en cours (via le bot)
-/inviter - Inviter des amis à rejoindre le bot et le mouvement
+/webapp - Lancer l'Application Web du mouvement
+/inviter - Inviter des amis à rejoindre le salon Telegram
 /contact [votre message] - Envoyer un message aux organisateurs
 /stats - Afficher les statistiques d'utilisation du bot
 /aboutai - En savoir plus sur mon fonctionnement
@@ -246,12 +243,12 @@ bot.action('about_ai', async (ctx) => {
 async function getRicInfoMarkdown() {
     return `**Le Référendum d'Initiative Citoyenne (RIC) : Le Cœur de notre Démocratie !**
 Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décline en plusieurs formes :
-\n* **RIC Législatif :** Proposer et voter des lois.
-\n* **RIC Abrogatoire :** Annuler une loi existante.
-\n* **RIC Constituant :** Modifier la Constitution.
-\n* **RIC Révocatoire :** Destituer un élu.
+\n\* **RIC Législatif :** Proposer et voter des lois.
+\n\* **RIC Abrogatoire :** Annuler une loi existante.
+\n\* **RIC Constituant :** Modifier la Constitution.
+\n\* **RIC Révocatoire :** Destituer un élu.
 
-\n\nC'est la garantie que notre voix sera directement entendue et respectée.
+\nC'est la garantie que notre voix sera directement entendue et respectée.
 \nNous organisons des sondages réguliers et des débats au sein du bot pour recueillir votre opinion et votre soutien sur le RIC. Utilisez la commande /sondage pour participer !
 `;
 }
@@ -260,7 +257,7 @@ async function getDestitutionInfoMarkdown() {
     return `**La Procédure de Destitution : L'Article 68 de la Constitution**
 \nL'Article 68 de la Constitution française prévoit la possibilité de destituer le Président de la République en cas de manquement à ses devoirs manifestement incompatible avec l'exercice de son mandat.
 
-\n\nNotre mouvement demande une application rigoureuse et transparente de cet article, et la mise en place de mécanismes citoyens pour initier et suivre cette procédure.
+\nNotre mouvement demande une application rigoureuse et transparente de cet article, et la mise en place de mécanismes citoyens pour initier et suivre cette procédure.
 \nPour le moment, nous recueillons les avis et les soutiens via des sondages et des discussions au sein du bot.
 `;
 }
@@ -276,7 +273,7 @@ Nous sommes le peuple, et nous exigeons une République juste et transparente. N
 \n4.  **Écologie Solidaire :** Une transition écologique juste, financée par ceux qui polluent le plus.
 \n5.  **Transparence et Intégrité :** Lutte implacable contre la corruption et les conflits d'intérêts.
 
-\n\nPour une lecture complète, explorez les commandes spécifiques (/ric, /destitution) ou discutez avec l'IA.
+\nPour une lecture complète, explorez les commandes spécifiques (/ric, /destitution) ou discutez avec l'IA.
     `);
 });
 
@@ -295,17 +292,17 @@ bot.command('greve', async (ctx) => {
     await ctx.replyWithMarkdown(
         `**Préparons ensemble la Grève Générale du 10 Septembre 2025 !**
 \nNous appelons à une mobilisation historique pour faire entendre nos exigences de justice sociale et de démocratie.
-\n* **Participez !** Que vous soyez salarié, étudiant, retraité, solidaire, votre présence est cruciale.
-\n* **Organisez-vous !** Créez des collectifs locaux, parlez-en autour de vous.
-\n* **Informez-vous !** Suivez nos annonces pour les points de rassemblement et les actions spécifiques via ce bot.
+\n\* **Participez !** Que vous soyez salarié, étudiant, retraité, solidaire, votre présence est cruciale.
+\n\* **Organisez-vous !** Créez des collectifs locaux, parlez-en autour de vous.
+\n\* **Informez-vous !** Suivez nos annonces pour les points de rassemblement et les actions spécifiques via ce bot.
 
-\n\nEnsemble, nous pouvons faire changer les choses !
-    `);
+\nEnsemble, nous pouvons faire changer les choses !
+`);
 });
 
 // Nouvelle commande : /sondage
 bot.command('sondage', async (ctx) => {
-    const polls = await readJsonFile(POLLS_FILE, []); // Lit les sondages existants
+    const polls = await readJsonFile(POLLS_FILE, []);
 
     if (polls.length === 0) {
         await ctx.reply('Aucun sondage actif pour le moment. Restez à l\'écoute !');
@@ -317,11 +314,10 @@ bot.command('sondage', async (ctx) => {
 
     polls.forEach((poll, index) => {
         message += `*${index + 1}. ${poll.question}*\n`;
-        // Afficher les options sans les réponses pour le vote
         poll.options.forEach(option => {
             message += `   - ${option.text}\n`;
         });
-        message += `   (Votez avec /voter${poll.id} [numéro_option])\n\n`; // Exemple: /voter1 2
+        message += `   (Votez avec /voter${poll.id} [numéro_option])\n\n`;
     });
 
     await ctx.replyWithMarkdown(message, Markup.inlineKeyboard(inlineKeyboardButtons));
@@ -353,16 +349,14 @@ bot.hears(/^\/voter(\d+) (\d+)$/, async (ctx) => {
         return;
     }
 
-    // Enregistrer le vote
     if (!poll.votes) {
         poll.votes = {};
     }
-    poll.votes[userId] = optionNumber - 1; // Stocke l'index de l'option
+    poll.votes[userId] = optionNumber - 1;
     poll.options[optionNumber - 1].count = (poll.options[optionNumber - 1].count || 0) + 1;
 
     await writeJsonFile(POLLS_FILE, polls);
     await ctx.reply(`Merci pour votre participation au sondage "${poll.question}" !`);
-    // Optionnel: Afficher les résultats mis à jour
     await displayPollResults(ctx, pollId);
 });
 
@@ -407,10 +401,10 @@ bot.command('create_poll', async (ctx) => {
     }
 
     const newPoll = {
-        id: (Math.random() * 1000000).toFixed(0), // Simple ID
+        id: (Math.random() * 1000000).toFixed(0),
         question,
         options,
-        votes: {} // Stores userId: optionIndex
+        votes: {}
     };
 
     let polls = await readJsonFile(POLLS_FILE, []);
@@ -428,13 +422,19 @@ bot.command('petition', async (ctx) => {
     );
 });
 
+// Nouvelle commande pour lancer l'application Web
+bot.command('webapp', async (ctx) => {
+    const inlineKeyboard = Markup.inlineKeyboard([
+        [Markup.button.webApp('🚀 Lancer l\'Application Web', TELEGRAM_WEB_APP_URL)]
+    ]);
+    await ctx.reply('Cliquez sur le bouton ci-dessous pour lancer l\'Application Web du mouvement :', inlineKeyboard);
+});
 
-// Commande /inviter : génère un lien d'invitation avec un payload unique
+
+// Commande /inviter : donne le lien vers le salon Telegram
 bot.command('inviter', async (ctx) => {
-    const botUsername = ctx.botInfo.username; // Le nom d'utilisateur de votre bot
-    const inviteLink = `https://t.me/${botUsername}?start=invite_${ctx.from.id}`; // Lien d'invitation avec un payload unique
     await ctx.replyWithMarkdown(
-        `Partagez ce lien pour inviter vos amis à rejoindre notre mouvement et le bot :\n\n\`${inviteLink}\`\n\nPlus nous sommes nombreux, plus notre voix porte !`
+        `Partagez ce lien pour inviter vos amis à rejoindre notre salon Telegram officiel :\n\n\`${TELEGRAM_GROUP_LINK}\`\n\nPlus nous sommes nombreux, plus notre voix porte !`
     );
 });
 
@@ -469,6 +469,13 @@ bot.command('stats', async (ctx) => {
 });
 
 
+// Commande /aboutai : informations sur l'IA
+bot.command('aboutai', async (ctx) => {
+    const aboutAIMessage = `Je suis un assistant IA basé sur les modèles de langage de Groq, entraîné pour vous informer et vous aider à vous engager dans le mouvement 'Le 10 Septembre'. Mon rôle est de faciliter la communication et l'accès à l'information sur nos objectifs de justice sociale et de démocratie.`;
+    await ctx.reply(aboutAIMessage);
+});
+
+
 // Traitement des messages texte généraux par l'IA (Groq)
 bot.on('text', async (ctx) => {
     try {
@@ -480,7 +487,7 @@ bot.on('text', async (ctx) => {
     }
 
     if (ctx.message.text.startsWith('/')) {
-        return; // Ne pas traiter les commandes comme des messages de conversation IA
+        return;
     }
     await ctx.replyWithChatAction('typing');
 
@@ -488,8 +495,8 @@ bot.on('text', async (ctx) => {
         const userMessage = ctx.message.text;
         const aiResponse = await getGroqChatResponse(
             userMessage,
-            'gemma2-9b-it', // Le modèle Groq que vous utilisez
-            rolesAssistant.assistant.content // Rôle Assistant pour Telegram
+            'gemma2-9b-it',
+            rolesAssistant.assistant.content
         );
         await ctx.reply(aiResponse);
     } catch (error) {
@@ -506,7 +513,6 @@ app.listen(BOT_SERVER_PORT, () => {
     console.log(`✨ ----------------------------------------------------------->`);
     console.log(`✨ Serveur API du bot Telegram running on http://localhost:${BOT_SERVER_PORT}`);
     console.log(`✨ Ce serveur Express est dédié aux fonctions internes du bot (ex: stats, polls).`);
-    // Le message sur l'application web externe est retiré
     console.log(`✨ ----------------------------------------------------------->`);
 
     // Lancement du chatbot terminal juste après le démarrage du serveur Express
@@ -519,11 +525,9 @@ app.listen(BOT_SERVER_PORT, () => {
             .then(async () => {
                 console.log('Telegram bot launched! ✨ Mouvement Citoyen 10 Septembre Bot.');
                 console.log(`✨ ----------------------------------------------------------->`);
-                // Supprimer tout webhook existant pour s'assurer du polling
                 await bot.telegram.deleteWebhook().catch(err => console.error('Erreur lors de la suppression du webhook précédent:', err));
                 console.log('Webhook précédent, si existant, a été supprimé pour assurer le polling.');
 
-                // Définir les commandes du bot sur Telegram (ceci met à jour le menu des commandes)
                 bot.telegram.setMyCommands([
                     { command: 'start', description: 'Démarrer le bot et voir le menu principal' },
                     { command: 'manifeste', description: 'Lire un extrait de notre manifeste' },
@@ -532,7 +536,8 @@ app.listen(BOT_SERVER_PORT, () => {
                     { command: 'greve', description: 'Infos pratiques sur la Grève du 10 Septembre 2025' },
                     { command: 'sondage', description: 'Participer aux sondages d\'opinion' },
                     { command: 'petition', description: 'Accéder aux pétitions en cours (via le bot)' },
-                    { command: 'inviter', description: 'Inviter des amis à rejoindre le mouvement' },
+                    { command: 'webapp', description: 'Lancer l\'Application Web du mouvement' }, // Nouvelle commande
+                    { command: 'inviter', description: 'Inviter des amis à rejoindre le salon Telegram' }, // Description mise à jour
                     { command: 'contact', description: 'Envoyer un message aux organisateurs' },
                     { command: 'stats', description: 'Afficher les statistiques d\'utilisation du bot' },
                     { command: 'aboutai', description: 'En savoir plus sur l\'IA du bot' },
@@ -547,7 +552,7 @@ app.listen(BOT_SERVER_PORT, () => {
             .catch(err => {
                 console.error('\n[ERREUR FATALE] Échec du lancement du bot Telegram:', err);
                 console.warn('Veuillez vérifier attentivement votre TELEGRAM_BOT_TOKEN dans le fichier .env.');
-                console.warn('Assurez-vous qu\'il est correct et qu\'il n\'y a pas d\'espace ou de caractères invisibles.');
+                console.warn('Assurez-uous qu\'il est correct et qu\'il n\'y a pas d\'espace ou de caractères invisibles.');
                 console.log(`✨ ----------------------------------------------------------->`);
             });
     } else {
@@ -572,8 +577,8 @@ async function startTerminalChatbot() {
     console.log('Pour quitter le chatbot et le serveur, appuyez sur Ctrl+C.');
 
     process.stdin.setEncoding('utf8');
-    process.stdin.setRawMode(false); // Permet de lire l'entrée ligne par ligne
-    process.stdin.resume(); // Commence à lire l'entrée
+    process.stdin.setRawMode(false);
+    process.stdin.resume();
 
     console.log('\nIA (Groq): (Initialisation de la conversation...)');
     try {
