@@ -8,6 +8,9 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config();
 
+// --- Nouvelle URL de base pour l'application web ---
+const BASE_WEB_APP_URL = 'https://ia-local.github.io/Manifest.910-2025';
+
 // Initialisation des variables de rôles (avec valeurs par défaut pour la robustesse)
 let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
 let rolesAssistant = { assistant: { content: "Je suis un assistant IA utile et informatif." } };
@@ -81,12 +84,13 @@ async function writeJsonFile(filePath, data) {
 }
 
 // --- Configuration du Bot Telegram ---
-const bot = new Telegraf('7281441282:AAGmRKFY2yDZ0BlkSW0hZpMWSLwsiTRYYCQ', {
+// Ajout de { telegram: { webhookReply: false } } pour forcer le long polling
+
+const bot = new Telegraf('7097263805:AAHQeI1swop7WwGSF9wNy77VGrfzcghUYP0', {
     telegram: {
       webhookReply: true,
     },
   });
-
 
 const ORGANIZER_GROUP_ID = process.env.ORGANIZER_GROUP_ID; // ID du groupe où envoyer les sujets/messages importants
 
@@ -143,7 +147,7 @@ bot.start(async (ctx) => {
         [Markup.button.callback('🗳️ S\'engager (RIC/Pétitions)', 'engage_menu')],
         [Markup.button.callback('✊ Infos Grève 10 Sept.', 'strike_info')],
         [Markup.button.callback('📊 Participer aux Sondages', 'show_polls')],
-        [Markup.button.url('🌐 Visiter le site web du Mouvement', 'http://localhost:5007')], // Lien vers votre application web
+        [Markup.button.url('🌐 Visiter le site web du Mouvement', `${BASE_WEB_APP_URL}`)], // LIEN MIS À JOUR
         [Markup.button.callback('❓ Aide & Commandes', 'show_help')]
     ]);
 
@@ -155,9 +159,9 @@ bot.action('engage_menu', async (ctx) => {
     await ctx.answerCbQuery();
     const engageMessage = `Choisissez comment vous souhaitez vous engager :`;
     const inlineKeyboard = Markup.inlineKeyboard([
-        [Markup.button.url('✅ Signer la Pétition RIC', 'http://localhost:5007/pages/ric.html')],
-        [Markup.button.url('⚖️ Soutenir la Procédure de Destitution', 'http://localhost:5007/pages/destitution-article68.html')],
-        [Markup.button.url('💬 Jugement Majoritaire & Justice Sociale', 'http://localhost:5007/pages/jugement-majoritaire.html')],
+        [Markup.button.url('✅ Signer la Pétition RIC', `${BASE_WEB_APP_URL}/pages/ric.html`)], // LIEN MIS À JOUR
+        [Markup.button.url('⚖️ Soutenir la Procédure de Destitution', `${BASE_WEB_APP_URL}/pages/destitution-article68.html`)], // LIEN MIS À JOUR
+        [Markup.button.url('💬 Jugement Majoritaire & Justice Sociale', `${BASE_WEB_APP_URL}/pages/jugement-majoritaire.html`)], // LIEN MIS À JOUR
         [Markup.button.callback('🔙 Retour au menu principal', 'start_menu')]
     ]);
     await ctx.reply(engageMessage, inlineKeyboard);
@@ -179,7 +183,7 @@ Notre mouvement est né de la conviction que la République doit retrouver ses v
 \n4.  **Une véritable transition écologique** qui ne laisse personne de côté, financée par la justice fiscale.
 \n5.  **La fin de l'impunité** et la responsabilisation des élites économiques et politiques.
 
-\n\nPour lire le manifeste complet et toutes nos propositions, visitez notre site web : [http://localhost:5007](http://localhost:5007)
+\n\nPour lire le manifeste complet et toutes nos propositions, visitez notre site web : [${BASE_WEB_APP_URL}](${BASE_WEB_APP_URL})
 `;
     await ctx.replyWithMarkdown(manifestoContent);
 });
@@ -233,7 +237,7 @@ Nous sommes le peuple, et nous exigeons une République juste et transparente. N
 \n4.  **Écologie Solidaire :** Une transition écologique juste, finançée par ceux qui polluent le plus.
 \n5.  **Transparence et Intégrité :** Lutte implacable contre la corruption et les conflits d'intérêts.
 
-\n\nPour une lecture complète : [http://localhost:5007](http://localhost:5007)
+\n\nPour une lecture complète : [${BASE_WEB_APP_URL}](${BASE_WEB_APP_URL})
     `);
 });
 
@@ -248,7 +252,7 @@ Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décli
 \n* **RIC Révocatoire :** Destituer un élu.
 
 \n\nC'est la garantie que notre voix sera directement entendue et respectée.
-\nPlus d'infos et signez la pétition : [http://localhost:5007/pages/ric.html](http://localhost:5007/pages/ric.html)
+\nPlus d'infos et signez la pétition : [${BASE_WEB_APP_URL}/pages/ric.html](${BASE_WEB_APP_URL}/pages/ric.html)
     `);
 });
 
@@ -259,7 +263,7 @@ bot.command('destitution', async (ctx) => {
 \nL'Article 68 de la Constitution française prévoit la possibilité de destituer le Président de la République en cas de manquement à ses devoirs manifestement incompatible avec l'exercice de son mandat.
 
 \n\nNotre mouvement demande une application rigoureuse et transparente de cet article, et la mise en place de mécanismes citoyens pour initier et suivre cette procédure.
-\nDécouvrez les preuves et l'appel au jugement majoritaire : [http://localhost:5007/pages/destitution-article68.html](http://localhost:5007/pages/destitution-article68.html)
+\nDécouvrez les preuves et l'appel au jugement majoritaire : [${BASE_WEB_APP_URL}/pages/destitution-article68.html](${BASE_WEB_APP_URL}/pages/destitution-article68.html)
     `);
 });
 
@@ -278,7 +282,6 @@ bot.command('greve', async (ctx) => {
 
 // Nouvelle commande : /sondage
 bot.command('sondage', async (ctx) => {
-    // await ctx.answerCbQuery(); // Pas nécessaire pour les commandes
     const polls = await readJsonFile(POLLS_FILE, []); // Lit les sondages existants
 
     if (polls.length === 0) {
@@ -402,7 +405,7 @@ bot.command('create_poll', async (ctx) => {
 // Commande pour les pétitions (redirige vers le site web)
 bot.command('petition', async (ctx) => {
     await ctx.replyWithMarkdown(
-        `➡️ **Pétitions en cours :**\n\nPour signer et soutenir nos pétitions pour le RIC et la procédure de destitution, veuillez visiter la section 'S'engager' sur notre site web :\n\n[Pétition RIC](http://localhost:5007/pages/ric.html)\n[Pétition Destitution](http://localhost:5007/pages/destitution-article68.html)\n\nVotre signature est essentielle pour la réussite de nos actions !`
+        `➡️ **Pétitions en cours :**\n\nPour signer et soutenir nos pétitions pour le RIC et la procédure de destitution, veuillez visiter la section 'S'engager' sur notre site web :\n\n[Pétition RIC](${BASE_WEB_APP_URL}/pages/ric.html)\n[Pétition Destitution](${BASE_WEB_APP_URL}/pages/destitution-article68.html)\n\nVotre signature est essentielle pour la réussite de nos actions !` // LIENS MIS À JOUR
     );
 });
 
@@ -486,7 +489,7 @@ app.listen(BOT_SERVER_PORT, () => {
     console.log(`✨ ----------------------------------------------------------->`);
     console.log(`✨ Serveur API du bot Telegram running on http://localhost:${BOT_SERVER_PORT}`);
     console.log(`✨ Ce serveur Express est dédié aux fonctions internes du bot (ex: stats, polls).`);
-    console.log(`✨ Votre application web est sur http://localhost:5007`);
+    console.log(`✨ Votre application web est maintenant accessible via : ${BASE_WEB_APP_URL}`); // MESSAGE MIS À JOUR
     console.log(`✨ ----------------------------------------------------------->`);
 
     // Lancement du chatbot terminal juste après le démarrage du serveur Express
@@ -547,7 +550,7 @@ async function startTerminalChatbot() {
         console.log('IA (Groq): Impossible de démarrer la conversation. Veuillez vérifier votre clé API Groq et votre connexion internet.');
     }
 
-    process.stdout.write('\nVous: ');
+    process.stdout.write('Vous: ');
 
     process.stdin.on('data', async (input) => {
         const message = input.trim();
