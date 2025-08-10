@@ -1,0 +1,222 @@
+{
+  "financial_flows": [
+    {
+      "id": "flow_elysee_001",
+      "sender_name": "boutique.elysee.fr",
+      "sender_country": "France",
+      "sender_geo": {
+        "lat": 48.8708,
+        "lon": 2.3168
+      },
+      "receiver_name": "EUROPAFI Holding",
+      "receiver_country": "Belgique",
+      "receiver_geo": {
+        "lat": 50.8503,
+        "lon": 4.3517
+      },
+      "amount_original": 45,
+      "currency_original": "EUR",
+      "amount_eur": 45,
+      "date": "2024-12-10",
+      "is_suspicious": true,
+      "is_crypto": false,
+      "description": "Vente de 4 petites cuillères Élysée x Degrenne",
+      "official_signer": "Présidence",
+      "asset_sold": "Produits dérivés de l'État"
+    },
+    {
+      "id": "flow_elysee_002",
+      "sender_name": "boutique.elysee.fr",
+      "sender_country": "France",
+      "sender_geo": {
+        "lat": 48.8708,
+        "lon": 2.3168
+      },
+      "receiver_name": "HSBC France",
+      "receiver_country": "France",
+      "receiver_geo": {
+        "lat": 48.8687,
+        "lon": 2.3129
+      },
+      "amount_original": 100,
+      "currency_original": "EUR",
+      "amount_eur": 100,
+      "date": "2024-12-12",
+      "is_suspicious": true,
+      "is_crypto": false,
+      "description": "Vente de 4 assiettes à dessert Élysée x Degrenne",
+      "official_signer": "Fonctionnaire Z",
+      "asset_sold": "Produits dérivés de l'État"
+    },
+    {
+      "id": "flow_elysee_003",
+      "sender_name": "boutique.elysee.fr",
+      "sender_country": "France",
+      "sender_geo": {
+        "lat": 48.8708,
+        "lon": 2.3168
+      },
+      "receiver_name": "Société Générale",
+      "receiver_country": "France",
+      "receiver_geo": {
+        "lat": 48.8596,
+        "lon": 2.3429
+      },
+      "amount_original": 145,
+      "currency_original": "EUR",
+      "amount_eur": 145,
+      "date": "2024-12-15",
+      "is_suspicious": true,
+      "is_crypto": false,
+      "description": "Vente d'un coffret service à café Élysée x Degrenne",
+      "official_signer": "Présidence",
+      "asset_sold": "Produits dérivés de l'État"
+    }
+  ],
+  "affaires": {
+    "chronology": [
+      {
+        "year": 2017,
+        "events": [
+          {
+            "timestamp": "2017-06-01T10:00:00Z",
+            "title": "Nomination d'Oliver Marleix",
+            "description": "Oliver Marleix est nommé président de la commission d'enquête parlementaire."
+          }
+        ]
+      },
+      {
+        "year": 2024,
+        "events": [
+          {
+            "timestamp": "2024-11-20T14:30:00Z",
+            "title": "Révélations de la commission",
+            "description": "Premières révélations sur les prises illégales d'intérêt."
+          },
+          {
+            "timestamp": "2024-12-05T09:00:00Z",
+            "title": "Décès d'Olivier Marleix",
+            "description": "Annonce du décès du président de la commission."
+          },
+          {
+            "timestamp": "2024-12-10T09:00:00Z",
+            "title": "Examen des activités de boutique.elysee.fr",
+            "description": "Ouverture d'une nouvelle ligne d'enquête sur les activités commerciales présumées illégales de la boutique officielle de l'Élysée."
+          }
+        ]
+      }
+    ]
+  },
+  "petitions": [
+    {
+      "id": "petition_ric_001",
+      "title": "Votation pour le Référendum d'Initiative Citoyenne (RIC)",
+      "description": "Pétition citoyenne demandant l'instauration du RIC.",
+      "topic": "Démocratie Directe",
+      "targeted_official_or_policy": "Législation Nationale",
+      "number_of_signatures": 1250000,
+      "date_started": "2018-12-01",
+      "date_ended": "2019-03-15",
+      "status": "active"
+    }
+  ],
+  "taxes": [
+    {
+      "id": "tax_tfa",
+      "name": "Taxe sur les Transactions Financières (TFA)",
+      "description": "Taxe sur les flux financiers et les mouvements de capitaux.",
+      "rate": 0.2,
+      "applicable_to": "financial_flows"
+    },
+    {
+      "id": "tax_production",
+      "name": "Taxe sur les Facteurs de Production",
+      "description": "Taxe basée sur les coûts de production des entreprises.",
+      "rate": 0.05,
+      "applicable_to": "company_data"
+    },
+    {
+      "id": "tax_vat",
+      "name": "Taxe sur la Valeur Ajoutée",
+      "description": "Modélisation de l'impact de la TVA sur les transactions.",
+      "rate": 0.2,
+      "applicable_to": "transactions"
+    },
+    {
+      "id": "tax_campaign",
+      "name": "Taxe sur les Excédents de Comptes de Campagne",
+      "description": "Taxe sur les excédents de financement des partis politiques, d'après les données de la CNCCFP.FR.",
+      "rate": 0.5,
+      "applicable_to": "campaign_finance"
+    }
+  ],
+  "entities": [
+    {
+      "name": "boutique.elysee.fr",
+      "type": "Commerce Officiel",
+      "description": "Plateforme de vente de produits dérivés de la présidence, potentiellement liée à des flux financiers illégaux."
+    },
+    {
+      "name": "EUROPAFI",
+      "type": "Holding Financière",
+      "description": "Holding de banques européennes avec des filiales dans plusieurs pays (DAB), potentiellement utilisée pour le blanchiment d'argent."
+    },
+    {
+      "name": "HSBC",
+      "type": "Banque Privée",
+      "description": "Banque internationale mentionnée dans l'enquête."
+    },
+    {
+      "name": "Société Générale",
+      "type": "Banque Commerciale",
+      "description": "Banque mentionnée dans l'enquête."
+    },
+    {
+      "name": "Crédit Mutuel",
+      "type": "Banque Commerciale",
+      "description": "Banque mentionnée dans l'enquête."
+    },
+    {
+      "name": "CIC",
+      "type": "Banque Commerciale",
+      "description": "Banque mentionnée dans l'enquête."
+    },
+    {
+      "name": "Crédit Agricole",
+      "type": "Banque Commerciale",
+      "description": "Banque mentionnée dans l'enquête."
+    },
+    {
+      "name": "La Poste",
+      "type": "Banque Commerciale",
+      "description": "Banque mentionnée dans l'enquête."
+    }
+  ],
+  "blockchain": {
+    "transactions": [
+      {
+        "id": "blockchain_tx_001",
+        "from": "Compte de Campagne",
+        "to": "Caisse de Manifestation",
+        "amount": 1500,
+        "currency": "EUR",
+        "timestamp": "2025-09-10T10:00:00Z",
+        "hash": "b4c1a2d7e5f8a9b0c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
+        "signature_numerique": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+      }
+    ]
+  },
+  "caisse_manifestation": {
+    "solde": 1500,
+    "transactions": [
+      {
+        "id": "caisse_tx_001",
+        "type": "entrée",
+        "description": "Transfert initial depuis un compte de campagne",
+        "montant": 1500,
+        "date": "2025-09-10",
+        "source": "Compte de Campagne"
+      }
+    ]
+  }
+}

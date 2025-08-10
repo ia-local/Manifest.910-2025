@@ -16,6 +16,8 @@ let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste
 let rolesAssistant = { assistant: { content: "Je suis un assistant IA utile et informatif." } };
 let rolesUser = { user: { content: "Je suis un utilisateur." } };
 
+
+
 // --- Chargement des fichiers JSON de rôles Groq ---
 try {
     const rolesSystemPath = path.join(__dirname, 'role', 'roles-system.json');
@@ -47,6 +49,7 @@ try {
 
 // --- Configuration du Serveur Express (pour les stats ou futures APIs bot-spécifiques) ---
 const app = express();
+app.use(express.static('docs'));
 const BOT_SERVER_PORT = process.env.BOT_SERVER_PORT || 3001; // Port différent du serveur Web principal (ex: 3000 ou 5007)
 
 app.use(bodyParser.json());

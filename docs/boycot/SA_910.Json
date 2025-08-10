@@ -1,0 +1,91 @@
+{
+  "financial_flows": [
+    {
+      "id": "flow_001",
+      "sender_name": "Entreprise A",
+      "sender_country": "France",
+      "sender_geo": { "lat": 48.8566, "lon": 2.3522 },
+      "receiver_name": "Société B",
+      "receiver_country": "Suisse",
+      "receiver_geo": { "lat": 46.2044, "lon": 6.1432 },
+      "amount_original": 100000,
+      "currency_original": "USD",
+      "amount_eur": 92000,
+      "date": "2023-01-15",
+      "is_suspicious": true,
+      "is_crypto": false,
+      "description": "Transfert suspect",
+      "official_signer": "Fonctionnaire X",
+      "asset_sold": "Alstom"
+    },
+    {
+      "id": "flow_002",
+      "sender_name": "Société C",
+      "sender_country": "Luxembourg",
+      "sender_geo": { "lat": 49.6117, "lon": 6.1319 },
+      "receiver_name": "Holding Z",
+      "receiver_country": "Îles Caïmans",
+      "receiver_geo": { "lat": 19.3133, "lon": -81.2546 },
+      "amount_original": 500000,
+      "currency_original": "EUR",
+      "amount_eur": 500000,
+      "date": "2024-03-22",
+      "is_suspicious": true,
+      "is_crypto": false,
+      "description": "Acquisition de parts suspecte",
+      "official_signer": "Fonctionnaire Y",
+      "asset_sold": "Sanofi"
+    }
+  ],
+  "affaires": {
+    "chronology": [
+      {
+        "year": 2017,
+        "events": [
+          {
+            "timestamp": "2017-06-01T10:00:00Z",
+            "title": "Nomination d'Oliver Marleix",
+            "description": "Oliver Marleix est nommé président de la commission d'enquête parlementaire."
+          }
+        ]
+      },
+      {
+        "year": 2024,
+        "events": [
+          {
+            "timestamp": "2024-11-20T14:30:00Z",
+            "title": "Révélations de la commission",
+            "description": "Premières révélations sur les prises illégales d'intérêt."
+          },
+          {
+            "timestamp": "2024-12-05T09:00:00Z",
+            "title": "Décès d'Olivier Marleix",
+            "description": "Annonce du décès du président de la commission."
+          }
+        ]
+      }
+    ]
+  },
+  "petitions": [
+    {
+      "id": "petition_ric_001",
+      "title": "Votation pour le Référendum d'Initiative Citoyenne (RIC)",
+      "description": "Pétition citoyenne demandant l'instauration du RIC.",
+      "topic": "Démocratie Directe",
+      "targeted_official_or_policy": "Législation Nationale",
+      "number_of_signatures": 1250000,
+      "date_started": "2018-12-01",
+      "date_ended": "2019-03-15",
+      "status": "active"
+    }
+  ],
+  "taxes": [
+    {
+      "id": "tax_tfa",
+      "name": "Taxe sur les Transactions Financières (TFA)",
+      "description": "Taxe sur les flux financiers et les mouvements de capitaux.",
+      "rate": 0.2,
+      "applicable_to": "financial_flows"
+    }
+  ]
+}

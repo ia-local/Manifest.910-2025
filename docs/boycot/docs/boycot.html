@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter une Boutique à boycotter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Formulaire d'ajout de Boutique en Boycott</h1>
+    </header>
+    <main>
+        <form id="boycotForm">
+            <p>Utilisez l'IA pour générer les informations à partir d'une phrase simple.</p>
+            <div class="form-group">
+                <label for="aiQuery">Requête pour l'IA (ex: "Ajouter un Leclerc à Paris") :</label>
+                <input type="text" id="aiQuery" name="aiQuery">
+                <button type="button" id="generateAIButton">Générer avec l'IA</button>
+            </div>
+            
+            <hr>
+
+            <div class="form-group">
+                <label for="name">Nom de l'entité :</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="type">Type d'entité :</label>
+                <input type="text" id="type" name="type" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description :</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="latitude">Latitude :</label>
+                <input type="number" step="any" id="latitude" name="latitude" required>
+            </div>
+            <div class="form-group">
+                <label for="longitude">Longitude :</label>
+                <input type="number" step="any" id="longitude" name="longitude" required>
+            </div>
+            <button type="submit" class="submit-button">Ajouter l'entité</button>
+        </form>
+        <p id="message" class="hidden"></p>
+    </main>
+    <script>
+        document.getElementById('generateAIButton').addEventListener('click', async function() {
+            const aiQuery = document.getElementById('aiQuery').value;
+            const messageElement = document.getElementById('message');
+            messageElement.classList.add('hidden');
+            messageElement.textContent = '';
+
+            if (!aiQuery) {
+                messageElement.textContent = "Veuillez entrer une requête pour l'IA.";
+                messageElement.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/ai/generate-entity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: aiQuery })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('name').value = data.name;
+                    document.getElementById('type').value = data.type;
+                    document.getElementById('description').value = data.description;
+                    document.getElementById('latitude').value = data.geo.lat;
+                    document.getElementById('longitude').value = data.geo.lon;
+                    messageElement.textContent = "Données générées par l'IA avec succès !";
+                    messageElement.classList.remove('hidden');
+                } else {
+                    throw new Error('Erreur lors de la génération par l\'IA.');
+                }
+            } catch (error) {
+                messageElement.textContent = error.message;
+                messageElement.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('boycotForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const data = {
+                name: form.name.value,
+                type: form.type.value,
+                description: form.description.value,
+                geo: {
+                    lat: parseFloat(form.latitude.value),
+                    lon: parseFloat(form.longitude.value)
+                }
+            };
+            
+            const messageElement = document.getElementById('message');
+            messageElement.classList.add('hidden');
+            messageElement.textContent = '';
+
+            try {
+                const response = await fetch('/api/entities', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    messageElement.textContent = 'Entité ajoutée avec succès à la liste de boycott !';
+                    messageElement.classList.remove('hidden');
+                    form.reset();
+                } else {
+                    throw new Error('Erreur lors de l\'ajout de l\'entité.');
+                }
+            } catch (error) {
+                messageElement.textContent = error.message;
+                messageElement.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
