@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Manifestation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #d9534f; }
+        h2 { color: #337ab7; }
+        .card { background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card h3 { margin-top: 0; }
+        .solde { font-size: 3em; font-weight: bold; color: #5cb85c; }
+        .croissance { font-size: 1.5em; font-style: italic; color: #333; }
+        nav a { margin-right: 15px; text-decoration: none; color: #d9534f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="index.html">Accueil</a>
+            <a href="boycott.html">Boycott Citoyen</a>
+            <a href="dashboard.html">Tableau de Bord</a>
+        </nav>
+        <h1>Tableau de Bord de la Manifestation</h1>
+        <div class="card">
+            <h2>La Caisse de Manifestation</h2>
+            <div class="solde" id="caisse-solde">0€</div>
+            <div class="croissance">"Croissance, Croissance !"</div>
+            <p>Le solde de notre caisse représente le cumul des taxes virtuelles générées par nos actions de boycott. C'est la preuve tangible de l'impact de notre mobilisation.</p>
+        </div>
+        <div class="card">
+            <h3>Compte à rebours avant le 10 septembre</h3>
+            <div id="dashboard-countdown" class="countdown"></div>
+        </div>
+        <script>
+            // Le script de compte à rebours est le même que dans index.html
+            const countdownDate = new Date("Sep 10, 2025 00:00:00").getTime();
+            const x = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = countdownDate - now;
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById("dashboard-countdown").innerHTML = days + "j " + hours + "h " + minutes + "m " + seconds + "s ";
+                if (distance < 0) {
+                    clearInterval(x);
+                    document.getElementById("dashboard-countdown").innerHTML = "La manifestation a commencé !";
+                }
+            }, 1000);
+
+            // Ceci est une version statique pour l'exemple. En production, elle serait remplacée par un appel API.
+            document.getElementById("caisse-solde").innerText = "24750€";
+        </script>
+    </div>
+</body>
+</html>

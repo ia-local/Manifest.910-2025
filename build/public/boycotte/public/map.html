@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte des filiales EUROPAFI</title>
+ <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <style>
+        #map {
+            height: 80vh; /* Hauteur de la carte */
+            width: 100%;
+        }
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        h1 {
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Filiales d'EUROPAFI en Europe</h1>
+    <div id="map"></div>
+
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+    <script>
+        // Initialisation de la carte Leaflet
+        const map = L.map('map').setView([48.8566, 2.3522], 4); // Vue centrée sur Paris, zoom 4
+
+        // Ajout du fond de carte (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Récupération des données d'EUROPAFI
+        fetch('euroPaFi.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur de chargement des données.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const locations = data.locations;
+                locations.forEach(location => {
+                    // Création d'un marqueur pour chaque emplacement
+                    const marker = L.marker([location.lat, location.lon]).addTo(map);
+
+                    // Ajout d'une info-bulle (popup) au marqueur
+                    marker.bindPopup(`
+                        <b>Filiale à ${location.city}</b><br>
+                        Pays : ${location.country}
+                    `);
+                });
+            })
+            .catch(error => console.error('Erreur:', error));
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+/* Fichier : src/css/main.css */
+
+/* --- Import des polices et variables de couleur --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+:root {
+    --color-primary: #0A192F;      /* Bleu sombre */
+    --color-accent: #64FFDA;       /* Vert clair pour les accents */
+    --color-background: #F8F9FA;   /* Gris très clair */
+    --color-text: #CCD6F6;         /* Gris clair pour le texte */
+    --color-text-dark: #333;       /* Texte sombre pour les fonds clairs */
+    --color-card-bg: #112240;      /* Fond des cartes */
+    --font-family-primary: 'Poppins', sans-serif;
+}
+/* Dans votre fichier main.css */
+.modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-container.hidden {
+    display: none;
+}
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    position: relative;
+    max-width: 80%;
+    max-height: 80%;
+    overflow-y: auto;
+}
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
+/* Exemple de style pour la map.js */
+/* Fichier : public/src/css/style.css (ajout) */
+
+.map-legend {
+    background: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    margin-top: 20px;
+}
+
+.map-legend h4 {
+    margin: 0 0 10px;
+    text-align: center;
+}
+
+#legend-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#legend-list li {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    border-bottom: 1px solid #eee;
+}
+
+#legend-list li:last-child {
+    border-bottom: none;
+}
+
+#legend-list li:hover {
+    background-color: #f1f1f1;
+}
+
+/* Style pour l'état "sélectionné" (actif) */
+#legend-list li.selected {
+    background-color: #e0f7fa; /* Un fond plus clair pour les éléments actifs */
+    font-weight: bold;
+}
+
+.legend-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* --- Styles généraux pour le bureau --- */
+body {
+    font-family: var(--font-family-primary);
+    background-color: var(--color-background);
+    color: var(--color-text-dark);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+}
+
+.app-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- Styles du menu latéral (aside) --- */
+.main-aside {
+    width: 250px;
+    background-color: var(--color-primary);
+    color: var(--color-text);
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0; /* Empêche l'aside de rétrécir */
+}
+
+.main-aside .logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.main-aside .logo h3 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.main-aside nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.main-aside nav li {
+    margin-bottom: 10px;
+}
+
+.main-aside nav a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: var(--color-text);
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.main-aside nav a:hover,
+.main-aside nav a.active {
+    background-color: var(--color-accent);
+    color: var(--color-primary);
+}
+
+/* --- Styles du contenu principal --- */
+.main-content {
+    flex-grow: 1;
+    padding: 30px;
+    overflow-y: auto;
+}
+
+.loading-screen {
+    text-align: center;
+    padding-top: 100px;
+    color: var(--color-text-dark);
+}
+
+/* --- Styles pour les pages chargées dynamiquement (cartes, etc.) --- */
+.card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.card h3 {
+    margin-top: 0;
+    color: var(--color-primary);
+}
+
+/* --- MEDIA QUERIES POUR LA VERSION MOBILE --- */
+@media (max-width: 768px) {
+    body {
+        display: block;
+    }
+
+    .app-container {
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .main-content {
+        padding: 15px;
+        order: 1; /* Place le contenu principal avant l'aside */
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-bottom: 70px; /* Ajoute un espace pour le menu de navigation en bas */
+    }
+
+    .main-aside {
+        width: 100%;
+        position: fixed; /* Fixe le menu en bas de l'écran */
+        bottom: 0;
+        left: 0;
+        z-index: 1000;
+        background-color: var(--color-primary);
+        padding: 10px 0;
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        order: 2; /* Place l'aside après le contenu principal */
+    }
+
+    .main-aside nav {
+        width: 100%;
+    }
+
+    .main-aside nav ul {
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .main-aside nav li {
+        margin: 0;
+        text-align: center;
+        flex-grow: 1;
+    }
+
+    .main-aside nav a {
+        padding: 8px 5px;
+        font-size: 0.8em;
+    }
+    
+    .main-aside .logo {
+        display: none; /* Cache le logo sur mobile pour gagner de la place */
+    }
+}

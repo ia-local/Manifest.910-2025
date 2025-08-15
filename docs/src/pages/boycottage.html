@@ -1,0 +1,46 @@
+<div class="page-container">
+    <header class="page-header">
+        <h1>Stratégie de Boycottage et Économie Circulaire</h1>
+        <p>Participez activement en redirigeant vos achats pour soutenir une économie locale et une caisse de manifestation citoyenne.</p>
+    </header>
+
+    <section class="map-section">
+        <h2>Carte de la manifestation</h2>
+        <div id="map" style="height: 500px;"></div>
+        
+        <div id="map-legend" class="map-legend">
+            <h4>Légende (Cliquez pour filtrer)</h4>
+            <ul id="legend-list"></ul>
+        </div>
+    </section>
+
+    <section class="add-boycott-form">
+        <h2>Ajouter une nouvelle enseigne à boycotter</h2>
+        <form id="new-boycott-form">
+            <label for="name">Nom de l'enseigne :</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="type">Type :</label>
+            <input type="text" id="type" name="type" required>
+
+            <label for="description">Description :</label>
+            <textarea id="description" name="description" required></textarea>
+
+            <label for="lat">Latitude (pour la carte) :</label>
+            <input type="number" step="any" id="lat" name="lat" required>
+            
+            <label for="lon">Longitude (pour la carte) :</label>
+            <input type="number" step="any" id="lon" name="lon" required>
+
+            <button type="submit">Ajouter l'enseigne</button>
+        </form>
+    </section>
+
+    <section class="boycott-list">
+        <h2>Enseignes à boycotter</h2>
+        <div id="entities-list" class="cards-grid">
+            <p>Chargement des entités...</p>
+        </div>
+    </section>
+    
+    </div>

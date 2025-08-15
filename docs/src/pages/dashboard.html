@@ -1,0 +1,46 @@
+<div class="dashboard-container">
+    <header class="dashboard-header">
+        <h1>Tableau de bord du live</h1>
+        <div class="timer">
+            <h3>Compte à rebours avant le 10 septembre</h3>
+            <div id="dashboard-countdown" class="countdown"></div>
+        </div>
+    </header>
+
+    <section class="live-tools">
+        <h2>Outils du live</h2>
+        <div class="card live-script-card">
+            <h3>Script du jour</h3>
+            <div id="live-script-content">
+                <p>Chargement du script...</p>
+            </div>
+        </div>
+        <div class="card ai-chat-card">
+            <h3>Assistant IA</h3>
+            <div id="ai-chat-history">
+                </div>
+            <div class="ai-chat-input">
+                <input type="text" id="ai-input" placeholder="Parlez à l'IA...">
+                <button id="ai-send-button">Envoyer</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="movement-stats">
+        <h2>Statistiques du mouvement</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Caisse de manifestation</h3>
+                <p id="caisse-solde">Solde : 0 €</p>
+                </div>
+            <div class="stat-card">
+                <h3>Appels au boycott</h3>
+                <p id="boycott-count">0 enseignes listées</p>
+            </div>
+            <div class="stat-card">
+                <h3>Sujets RIC</h3>
+                <p id="ric-count">0 propositions actives</p>
+            </div>
+        </div>
+    </section>
+</div>
