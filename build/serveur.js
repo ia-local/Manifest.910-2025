@@ -191,7 +191,7 @@ bot.action('start_menu', async (ctx) => {
     await bot.start(ctx); // Simule la commande /start pour réafficher le menu principal
 });
 
-bot.action('show_manifesto', async (ctx) => {
+bot.action('show_manifest', async (ctx) => {
     await ctx.answerCbQuery();
     const manifestoContent = `**Extrait du Manifeste 'Le 10 Septembre' :**
 Notre mouvement est né de la conviction que la République doit retrouver ses valeurs de justice sociale, de démocratie directe et de transparence. Nous exigeons :

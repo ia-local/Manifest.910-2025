@@ -64,6 +64,9 @@
     list-style-type: none;
     padding: 0;
     margin: 0;
+    display: grid; /* Ajout pour la mise en page en grille */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Ajout pour des colonnes réactives */
+    gap: 15px; /* Ajout pour l'espacement des grilles */
 }
 
 #legend-list li {
@@ -72,11 +75,8 @@
     padding: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    border-bottom: 1px solid #eee;
-}
-
-#legend-list li:last-child {
-    border-bottom: none;
+    border: 1px solid #eee; /* Remplace le border-bottom par un border complet pour la grille */
+    border-radius: 5px; /* Ajout d'un léger rayon pour le style */
 }
 
 #legend-list li:hover {

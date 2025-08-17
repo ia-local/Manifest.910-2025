@@ -1,11 +1,17 @@
 // Fichier : public/src/js/app.js
-// Lancement de l'application au chargement complet de la page
+// Ce fichier gère la navigation et l'initialisation des différentes pages de l'application.
+
+// --- Lancement de l'application ---
 document.addEventListener('DOMContentLoaded', () => {
     loadAsideMenu();
     loadPage('home');
 });
 
-// Fonction pour charger le menu latéral
+// --- Fonctions de navigation ---
+
+/**
+ * Charge le menu latéral de l'application.
+ */
 function loadAsideMenu() {
     const mainNavigation = document.getElementById('main-navigation');
     if (mainNavigation) {
@@ -26,7 +32,10 @@ function loadAsideMenu() {
     }
 }
 
-// Fonction pour charger dynamiquement une page HTML
+/**
+ * Charge une page HTML de manière dynamique dans le contenu principal.
+ * @param {string} pageName - Le nom de la page à charger (ex: 'home', 'boycottage').
+ */
 function loadPage(pageName) {
     const mainContent = document.getElementById('main-content');
     const asideLinks = document.querySelectorAll('.main-aside a');
@@ -48,11 +57,7 @@ function loadPage(pageName) {
         })
         .then(html => {
             mainContent.innerHTML = html;
-            // Gestion des initialisations spécifiques aux pages
             switch (pageName) {
-                case 'home':
-                    // initHomePage(); // Pour l'instant, la page home n'a pas de logique JS
-                    break;
                 case 'dashboard':
                     initDashboard();
                     break;
@@ -61,15 +66,6 @@ function loadPage(pageName) {
                     break;
                 case 'boycottage':
                     initBoycottagePage();
-                    break;
-                case 'organisation':
-                    // initOrganisationPage();
-                    break;
-                case 'contacts':
-                    // initContactsPage();
-                    break;
-                case 'affaires':
-                    // initAffairesPage();
                     break;
                 default:
                     console.log(`Page ${pageName} chargée, pas de fonction d'initialisation.`);
@@ -82,7 +78,11 @@ function loadPage(pageName) {
         });
 }
 
-// Fonction d'initialisation du tableau de bord (dashboard.html)
+// --- Fonctions d'initialisation des pages ---
+
+/**
+ * Initialise la page du tableau de bord et affiche les listes d'entités.
+ */
 function initDashboard() {
     console.log("Initialisation du tableau de bord...");
 
@@ -96,7 +96,7 @@ function initDashboard() {
             countdownElement.textContent = `J-${days} avant le 10 septembre`;
         }, 1000);
     }
-    
+
     fetch('/api/dashboard/summary')
         .then(response => {
             if (!response.ok) throw new Error('Erreur de chargement des données du tableau de bord.');
@@ -108,12 +108,44 @@ function initDashboard() {
             document.getElementById('ric-count').textContent = `${data.ricCount} propositions actives`;
         })
         .catch(error => console.error('Erreur:', error));
+
+    // Appel de la nouvelle fonction pour afficher les listes d'entités
+    displayEntityLists();
 }
 
-// Fonction d'initialisation de la page RIC
+/**
+ * Affiche les listes des préfectures et des groupes Telegram.
+ */
+async function displayEntityLists() {
+    try {
+        const response = await fetch('/database.json');
+        if (!response.ok) {
+            throw new Error(`Erreur de chargement de la base de données : ${response.statusText}`);
+        }
+        const data = await response.json();
+
+        const prefecturesList = document.getElementById('prefectures-list');
+        const telegramList = document.getElementById('telegram-list');
+
+        if (prefecturesList) {
+            prefecturesList.innerHTML = data.prefectures.map(p => `<li>${p.city} (${p.department})</li>`).join('');
+        }
+
+        if (telegramList) {
+            telegramList.innerHTML = data.telegram_groups.map(g => `<li><a href="${g.link}" target="_blank">${g.name} - ${g.city}</a></li>`).join('');
+        }
+
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage des listes d\'entités:', error);
+    }
+}
+
+
+/**
+ * Initialise la page du Référendum d'Initiative Citoyenne (RIC).
+ */
 function initRicPage() {
     console.log("Initialisation de la page RIC...");
-
     fetch('/api/rics')
         .then(response => response.json())
         .then(rics => {
@@ -131,74 +163,67 @@ function initRicPage() {
         .catch(error => console.error('Erreur de chargement des RIC:', error));
 }
 
-// Fonction d'initialisation de la page Boycottage
-// Fonction d'initialisation de la page Boycottage
+
+async function fetchAllData() {
+    try {
+        const databaseResponse = await fetch('/database.json');
+        const data = await databaseResponse.json();
+        
+        return {
+            boycotts: data.boycotts,
+            prefectures: data.prefectures,
+            telegramGroups: data.telegram_groups
+        };
+    } catch (error) {
+        console.error('Erreur lors de la récupération des données:', error);
+        return { boycotts: [], prefectures: [], telegramGroups: [] };
+    }
+}
+
+
+/**
+ * Initialise la page de Boycottage en chargeant les données nécessaires pour la carte.
+ */
 async function initBoycottagePage() {
     console.log("Initialisation de la page Boycottage...");
 
     try {
-        const [boycottsResponse, manifestationsResponse] = await Promise.all([
-            fetch('/api/boycotts'),
-            fetch('/api/manifestation-sites')
-        ]);
-        
-        if (!boycottsResponse.ok || !manifestationsResponse.ok) {
-            throw new Error('Erreur de chargement des données de la carte.');
-        }
+        const data = await fetchAllData();
 
-        const boycotts = await boycottsResponse.json();
-        const manifestations = await manifestationsResponse.json();
-
-        // Remplir la liste des entités
-        const entitiesList = document.getElementById('entities-list');
-        if (entitiesList) {
-            entitiesList.innerHTML = boycotts.map(entity => `
-                <div class="card boycott-card">
-                    <h3>${entity.name}</h3>
-                    <p>Type : ${entity.type}</p>
-                    <p>${entity.description}</p>
-                </div>
-            `).join('');
-        }
-        
-        // Initialiser la carte avec les données
         const mapContainer = document.getElementById('map');
-        if (mapContainer) {
-            initMap(boycotts, manifestations);
+        if (mapContainer && typeof initMap === 'function') {
+            initMap(data.boycotts, data.prefectures, data.telegramGroups);
+        } else {
+            console.error('Erreur: Le conteneur de carte ou la fonction initMap est manquant.');
         }
 
-        // Gérer l'ajout d'une nouvelle entité
         const form = document.getElementById('new-boycott-form');
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(form);
-                const data = Object.fromEntries(formData.entries());
-                
-                // Formater les données pour inclure les coordonnées
+                const newData = Object.fromEntries(formData.entries());
+
                 const newEntity = {
-                    name: data.name,
-                    type: data.type,
-                    description: data.description,
+                    name: newData.name,
+                    type: newData.type,
+                    description: newData.description,
                     locations: [
-                        { lat: parseFloat(data.lat), lon: parseFloat(data.lon) }
+                        { lat: parseFloat(newData.lat), lon: parseFloat(newData.lon) }
                     ]
                 };
 
                 const response = await fetch('/api/boycotts', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newEntity)
                 });
 
                 if (response.ok) {
                     alert('Enseigne ajoutée avec succès !');
-                    // Recharger la page pour mettre à jour la carte et la liste
                     loadPage('boycottage');
                 } else {
-                    alert('Erreur lors de l\'ajout de l\'enseigne.');
+                    alert('Erreur lors de l ajout de lenseigne.');
                 }
             });
         }
@@ -206,8 +231,3 @@ async function initBoycottagePage() {
         console.error('Erreur:', error);
     }
 }
-// Lancement de l'application au chargement complet de la page
-document.addEventListener('DOMContentLoaded', () => {
-    loadAsideMenu();
-    loadPage('home');
-});
