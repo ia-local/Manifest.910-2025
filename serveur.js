@@ -461,26 +461,51 @@ app.post('/api/affaires/event', async (req, res) => {
 });
 
 // RICS
-app.get('/api/rics', (req, res) => res.json(database.rics));
+// Route pour obtenir tous les RIC
+app.get('/api/rics', (req, res) => {
+    res.json(database.rics);
+});
+
+// Route pour créer un nouveau RIC
 app.post('/api/rics', async (req, res) => {
-    const newRic = { id: uuidv4(), ...req.body };
+    const { question, description, deadline, voteMethod } = req.body;
+    const newRic = {
+        id: uuidv4(), // Génère un ID unique
+        question,
+        description,
+        deadline,
+        voteMethod,
+        votes_for: 0,
+        votes_against: 0,
+        status: 'active',
+        locations: []
+    };
     database.rics.push(newRic);
     await writeDatabaseFile();
     res.status(201).json(newRic);
 });
+
+// Route pour mettre à jour les votes d'un RIC
 app.put('/api/rics/:id', async (req, res) => {
-    const index = database.rics.findIndex(r => r.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'RIC non trouvé.' });
-    database.rics[index] = { ...database.rics[index], ...req.body };
+    const ricId = req.params.id;
+    const { vote_type } = req.body; // 'for' ou 'against'
+
+    const ric = database.rics.find(r => r.id === ricId);
+
+    if (!ric) {
+        return res.status(404).json({ error: 'Référendum non trouvé.' });
+    }
+
+    if (vote_type === 'for') {
+        ric.votes_for++;
+    } else if (vote_type === 'against') {
+        ric.votes_against++;
+    } else {
+        return res.status(400).json({ error: 'Type de vote invalide.' });
+    }
+    
     await writeDatabaseFile();
-    res.json(database.rics[index]);
-});
-app.delete('/api/rics/:id', async (req, res) => {
-    const index = database.rics.findIndex(r => r.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'RIC non trouvé.' });
-    database.rics.splice(index, 1);
-    await writeDatabaseFile();
-    res.status(204).end();
+    res.status(200).json(ric);
 });
 
 // TAXES
