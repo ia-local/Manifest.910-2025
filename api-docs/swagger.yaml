@@ -11,8 +11,8 @@ tags:
     description: Gestion des transactions et flux financiers suspects.
   - name: Affaires
     description: Gestion de la chronologie des affaires de l'enquête.
-  - name: Pétitions
-    description: Gestion des pétitions citoyennes.
+  - name: RIC
+    description: Gestion des Référendums d'Initiative Citoyenne.
   - name: Entités
     description: Gestion des entités (entreprises, individus, etc.) liées à l'enquête.
   - name: Caisse de manifestation
@@ -123,35 +123,38 @@ paths:
         '201':
           description: Événement ajouté avec succès.
 
-  /api/petitions:
+  /api/rics:
     get:
       tags:
-        - Pétitions
-      summary: Récupère toutes les pétitions.
+        - RIC
+      summary: Récupère la liste de tous les RIC actifs.
       responses:
         '200':
-          description: Liste de toutes les pétitions.
+          description: Liste de tous les RIC.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Petition'
+                  $ref: '#/components/schemas/Ric'
     post:
       tags:
-        - Pétitions
-      summary: Crée une nouvelle pétition.
+        - RIC
+      summary: Crée une nouvelle proposition de RIC.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PetitionInput'
+              $ref: '#/components/schemas/RicInput'
       responses:
         '201':
-          description: Pétition créée avec succès.
-
-  /api/petitions/{id}:
+          description: RIC créé avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ric'
+  /api/rics/{id}:
     put:
       tags:
         - Pétitions
@@ -473,27 +476,47 @@ components:
           format: date-time
         description:
           type: string
-    Petition:
+    Ric:
       type: object
       properties:
         id:
           type: string
-        title:
+          description: ID unique du RIC.
+        question:
           type: string
+          description: Question du référendum.
         description:
           type: string
-        topic:
-          type: string
-        targeted_official_or_policy:
-          type: string
-        number_of_signatures:
-          type: integer
-        date_started:
+          description: Description détaillée de la proposition.
+        deadline:
           type: string
           format: date
+          description: Date limite pour les votes.
+        voteMethod:
+          type: string
+          description: Modalité de vote proposée.
+        votes_for:
+          type: integer
+          description: Nombre de votes 'pour'.
+        votes_against:
+          type: integer
+          description: Nombre de votes 'contre'.
         status:
           type: string
-    PetitionInput:
+          description: Statut actuel du RIC (ex: 'active').
+        locations:
+          type: array
+          description: Répartition géographique des votes (simulée).
+          items:
+            type: object
+            properties:
+              lat:
+                type: number
+              lon:
+                type: number
+              count:
+                type: integer
+    RicInput:
       type: object
       properties:
         title:

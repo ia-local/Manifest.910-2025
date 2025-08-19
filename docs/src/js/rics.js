@@ -3,6 +3,7 @@
 
 let ricMap;
 let activeRicsData = [];
+let ricMarkersLayer = L.layerGroup(); // Couche pour les marqueurs de RIC
 
 // Définition des icônes personnalisées pour la carte (si nécessaire)
 const ricIcon = L.icon({
@@ -37,7 +38,8 @@ function initRicPage() {
             activeRicsData = data;
             loadRics();
             setupRicFormModal();
-            initRicMap();
+            setupFilters();
+            setupRicMapModal(); // Nouvelle fonction pour gérer la modale de la carte
         })
         .catch(error => {
             console.error("Erreur lors de l'initialisation de la page RIC:", error);
@@ -46,6 +48,117 @@ function initRicPage() {
                 ricListContainer.innerHTML = `<p class="error-message">Erreur : Impossible de charger les propositions de référendum.</p>`;
             }
         });
+}
+
+/**
+ * Configure la modale de la carte et ses événements.
+ */
+function setupRicMapModal() {
+    const viewMapBtn = document.getElementById('view-map-btn');
+    if (viewMapBtn) {
+        viewMapBtn.addEventListener('click', () => {
+            const mapTemplate = document.getElementById('ric-map-modal-template');
+            if (mapTemplate) {
+                const mapContent = mapTemplate.content.cloneNode(true);
+                showModal('Localisation des RIC', mapContent);
+                // Initialise la carte dans la modale une fois qu'elle est affichée
+                setTimeout(() => {
+                    initRicMapInModal(activeRicsData);
+                    setupMapFilters();
+                }, 100);
+            }
+        });
+    }
+}
+
+/**
+ * Configure les écouteurs d'événements pour les filtres de la modale de la carte.
+ */
+function setupMapFilters() {
+    const levelFilter = document.getElementById('level-filter-modal');
+    const sortFilter = document.getElementById('sort-filter-modal');
+    const filterBtn = document.getElementById('filter-map-btn');
+
+    if (filterBtn) {
+        filterBtn.addEventListener('click', () => {
+            const level = levelFilter.value;
+            const sortBy = sortFilter.value;
+            filterAndDisplayMap(level, sortBy);
+        });
+    }
+}
+
+/**
+ * Filtre et affiche les RIC sur la carte.
+ * @param {string} level Le niveau de scrutin à filtrer.
+ * @param {string} sortBy Le critère de tri.
+ */
+function filterAndDisplayMap(level, sortBy) {
+    let filteredData = activeRicsData;
+
+    // Filtrage par niveau
+    if (level !== 'all') {
+        filteredData = filteredData.filter(ric => ric.level === level);
+    }
+    
+    // Tri par nombre de votants
+    if (sortBy === 'voters') {
+        filteredData.sort((a, b) => (b.votes_for + b.votes_against) - (a.votes_for + a.votes_against));
+    }
+
+    // Efface les anciens marqueurs et en ajoute de nouveaux
+    ricMarkersLayer.clearLayers();
+    renderMapMarkers(filteredData);
+}
+
+/**
+ * Initialise la carte dans la modale.
+ * @param {Array} data Les données de RIC à afficher.
+ */
+function initRicMapInModal(data) {
+    const mapContainer = document.getElementById('ric-map-modal');
+    if (!mapContainer) return;
+
+    // Assure que la carte n'est pas déjà initialisée sur cet élément
+    if (ricMap) {
+        ricMap.remove();
+    }
+
+    ricMap = L.map('ric-map-modal').setView([46.603354, 1.888334], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(ricMap);
+    
+    // Ajoute la couche de marqueurs à la carte
+    ricMarkersLayer.addTo(ricMap);
+    
+    // Affiche les marqueurs initiaux
+    renderMapMarkers(data);
+}
+
+/**
+ * Affiche les marqueurs sur la carte en fonction des données fournies.
+ * @param {Array} data Les données de RIC à afficher.
+ */
+function renderMapMarkers(data) {
+    data.forEach(ric => {
+        if (ric.locations) {
+            ric.locations.forEach(location => {
+                const marker = L.circleMarker([location.lat, location.lon], {
+                    radius: Math.sqrt(location.count) / 10,
+                    fillColor: "#007bff",
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).bindPopup(`<b>${ric.question}</b><br>Votes : ${location.count.toLocaleString()}<br>Niveau : ${ric.level}`);
+                
+                ricMarkersLayer.addLayer(marker);
+            });
+        }
+    });
 }
 
 /**
@@ -81,20 +194,61 @@ function setupRicFormSubmission() {
 }
 
 /**
- * Récupère les propositions de RIC depuis le fichier JSON et les affiche.
+ * Configure les écouteurs d'événements pour les filtres de la page principale.
  */
-function loadRics() {
+function setupFilters() {
+    const levelFilter = document.getElementById('level-filter');
+    const sortFilter = document.getElementById('sort-filter');
+    
+    if (levelFilter) {
+        levelFilter.addEventListener('change', filterRics);
+    }
+    if (sortFilter) {
+        sortFilter.addEventListener('change', filterRics);
+    }
+}
+
+/**
+ * Filtre et trie les propositions de RIC.
+ */
+function filterRics() {
+    const levelFilterValue = document.getElementById('level-filter').value;
+    const sortFilterValue = document.getElementById('sort-filter').value;
+    
+    let filteredData = activeRicsData;
+    
+    // Filtrage par niveau de scrutin
+    if (levelFilterValue !== 'all') {
+        filteredData = filteredData.filter(ric => ric.level === levelFilterValue);
+    }
+    
+    // Tri par nombre de votants
+    if (sortFilterValue === 'voters') {
+        filteredData.sort((a, b) => (b.votes_for + b.votes_against) - (a.votes_for + a.votes_against));
+    }
+    
+    // Affiche les données filtrées et triées
+    loadRics(filteredData);
+}
+
+/**
+ * Récupère les propositions de RIC depuis le fichier JSON et les affiche.
+ * @param {Array} data Les données à afficher (optionnel, utilise activeRicsData par défaut).
+ */
+function loadRics(data = activeRicsData) {
     const ricListContainer = document.getElementById('ric-list');
     if (!ricListContainer) return;
 
     ricListContainer.innerHTML = '';
 
-    if (activeRicsData.length === 0) {
+    const dataToDisplay = data;
+
+    if (dataToDisplay.length === 0) {
         ricListContainer.innerHTML = `<p>Aucune proposition de RIC active pour le moment.</p>`;
         return;
     }
 
-    activeRicsData.forEach(ric => {
+    dataToDisplay.forEach(ric => {
         const card = document.createElement('div');
         card.className = 'card ric-card';
         card.innerHTML = `
@@ -157,36 +311,6 @@ function showVoteModal(ricId) {
     showModal(`Voter sur le RIC : "${ric.question}"`, modalContent);
 }
 
-/**
- * Initialise la carte pour afficher les résultats du scrutin.
- */
-function initRicMap() {
-    const mapContainer = document.getElementById('ric-map');
-    if (!mapContainer) return;
-
-    if (ricMap) {
-        ricMap.remove();
-    }
-
-    ricMap = L.map('ric-map').setView([46.603354, 1.888334], 6);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(ricMap);
-
-    activeRicsData.forEach(ric => {
-        if (ric.locations) {
-            ric.locations.forEach(location => {
-                L.circleMarker([location.lat, location.lon], {
-                    radius: Math.sqrt(location.count) / 10,
-                    fillColor: "#007bff",
-                    color: "#000",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).bindPopup(`<b>${ric.question}</b><br>Votes : ${location.count.toLocaleString()}`).addTo(ricMap);
-            });
-        }
-    });
-}
+// L'ancienne fonction initRicMap a été remplacée par la logique de la modale.
+// J'ai gardé le même nom pour la lisibilité, mais elle ne fait plus rien.
+function initRicMap() {}
