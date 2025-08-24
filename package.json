@@ -4,7 +4,7 @@
   "description": "Plateforme citoyenne de mobilisation pour le 10 septembre.",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "electron . & node serveur.js",
     "serveur": "node serveur.js"
   },
   "keywords": [

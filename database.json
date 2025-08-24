@@ -19,6 +19,17 @@
       "votes_against": 0,
       "status": "active",
       "locations": []
+    },
+    {
+      "id": "d95bd99f-5c9f-4892-921e-fd887f5cc4b1",
+      "question": "Êtes-vous favorable à la destitution d'Emmanuel Macron ?",
+      "description": "Depuis de nombreuses années, Emmanuel Macron Macron enchaîne les manquements, les délits escroquerie à la finance, détournement de fond, prise illégale d'intérêt, usage abusif de l'article 49 alinéa 3 de la constitution française, seul alternative au maintien de la paix et à la justice, sa destitution",
+      "deadline": "2025-09-10",
+      "voteMethod": "petition",
+      "level": "local",
+      "votes_for": 0,
+      "votes_against": 0,
+      "status": "pending"
     }
   ],
   "taxes": [
@@ -1847,6 +1858,27 @@
   "blockchain": {
     "transactions": []
   },
-  "polls": [],
+  "polls": [
+    {
+      "id": "0539a859-4a78-4398-bcad-a2a699e2db12",
+      "messageId": 998,
+      "question": "Quel sujet devrions-nous aborder dans le prochain live ?",
+      "options": [
+        {
+          "text": "Justice Sociale",
+          "votes": 0
+        },
+        {
+          "text": "Justice Fiscale",
+          "votes": 0
+        },
+        {
+          "text": "Justice Climatique",
+          "votes": 0
+        }
+      ],
+      "creatorId": 5715486909
+    }
+  ],
   "organizers": []
 }

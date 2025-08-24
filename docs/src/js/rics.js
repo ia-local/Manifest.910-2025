@@ -1,5 +1,7 @@
 // Fichier : public/src/js/rics.js
 // Ce fichier gère la logique de la page des Référendums d'Initiative Citoyenne (RIC).
+// CORRECTION : Le formulaire et les votes interagissent avec l'API du serveur pour
+// gérer les données dans rics.json. Le bouton "Supprimer" a été retiré.
 
 let ricMap;
 let activeRicsData = [];
@@ -15,19 +17,18 @@ const ricIcon = L.icon({
 
 /**
  * Fonction d'initialisation de la page RIC.
- * Appeler cette fonction depuis app.js après le chargement du HTML.
+ * Récupère les données depuis l'API du serveur au lieu du fichier JSON statique.
  */
 function initRicPage() {
     console.log("Initialisation de la page RIC...");
 
-    // Appelle setupModal pour s'assurer que les écouteurs d'événements de la modale sont prêts
-    // Cette fonction est définie dans modal-ric.js
+    // S'assurer que la modale est initialisée
     if (typeof setupModal === 'function') {
         setupModal();
     }
     
-    // Récupération des données depuis le fichier JSON externe
-    fetch('src/json/rics.json')
+    // Récupération des données depuis l'API du serveur
+    fetch('/api/rics')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Erreur de chargement des données des référendums.');
@@ -35,11 +36,16 @@ function initRicPage() {
             return response.json();
         })
         .then(data => {
-            activeRicsData = data;
-            loadRics();
+            // S'assure que chaque RIC a un statut par défaut
+            activeRicsData = data.map(ric => ({ ...ric, status: ric.status || 'active' }));
+            
+            // Met à jour le statut et lance le tirage au sort si nécessaire
+            updateRicStatusAndConductDraws();
+            
+            // Configure les écouteurs d'événements
             setupRicFormModal();
             setupFilters();
-            setupRicMapModal(); // Nouvelle fonction pour gérer la modale de la carte
+            setupRicMapModal();
         })
         .catch(error => {
             console.error("Erreur lors de l'initialisation de la page RIC:", error);
@@ -48,6 +54,30 @@ function initRicPage() {
                 ricListContainer.innerHTML = `<p class="error-message">Erreur : Impossible de charger les propositions de référendum.</p>`;
             }
         });
+}
+
+/**
+ * Met à jour le statut des RIC en fonction de la date butoir
+ * et simule le tirage au sort pour les référendums expirés.
+ */
+function updateRicStatusAndConductDraws() {
+    const now = new Date();
+    
+    activeRicsData.forEach(ric => {
+        const deadline = new Date(ric.deadline);
+        
+        // Si le RIC est actif et que la date butoir est passée
+        if (ric.status === 'active' && deadline < now) {
+            ric.status = 'en attente';
+            ric.drawn_people = 10; // Simulation du tirage au sort
+            
+            console.log(`RIC "${ric.question}" a atteint sa date butoir. Déclenchement du tirage au sort.`);
+            console.log(`Tirage au sort effectué. ${ric.drawn_people} citoyens ont été sélectionnés pour statuer sur la majorité.`);
+        }
+    });
+    
+    // Recharge les RIC pour refléter les changements
+    loadRics();
 }
 
 /**
@@ -61,7 +91,7 @@ function setupRicMapModal() {
             if (mapTemplate) {
                 const mapContent = mapTemplate.content.cloneNode(true);
                 showModal('Localisation des RIC', mapContent);
-                // Initialise la carte dans la modale une fois qu'elle est affichée
+                // Utilisation de setTimeout pour s'assurer que la modale est rendue
                 setTimeout(() => {
                     initRicMapInModal(activeRicsData);
                     setupMapFilters();
@@ -96,17 +126,14 @@ function setupMapFilters() {
 function filterAndDisplayMap(level, sortBy) {
     let filteredData = activeRicsData;
 
-    // Filtrage par niveau
     if (level !== 'all') {
         filteredData = filteredData.filter(ric => ric.level === level);
     }
     
-    // Tri par nombre de votants
     if (sortBy === 'voters') {
         filteredData.sort((a, b) => (b.votes_for + b.votes_against) - (a.votes_for + a.votes_against));
     }
 
-    // Efface les anciens marqueurs et en ajoute de nouveaux
     ricMarkersLayer.clearLayers();
     renderMapMarkers(filteredData);
 }
@@ -119,7 +146,6 @@ function initRicMapInModal(data) {
     const mapContainer = document.getElementById('ric-map-modal');
     if (!mapContainer) return;
 
-    // Assure que la carte n'est pas déjà initialisée sur cet élément
     if (ricMap) {
         ricMap.remove();
     }
@@ -131,10 +157,8 @@ function initRicMapInModal(data) {
         attribution: '© OpenStreetMap contributors'
     }).addTo(ricMap);
     
-    // Ajoute la couche de marqueurs à la carte
     ricMarkersLayer.addTo(ricMap);
     
-    // Affiche les marqueurs initiaux
     renderMapMarkers(data);
 }
 
@@ -146,14 +170,15 @@ function renderMapMarkers(data) {
     data.forEach(ric => {
         if (ric.locations) {
             ric.locations.forEach(location => {
+                const totalVotes = (ric.votes_for || 0) + (ric.votes_against || 0);
                 const marker = L.circleMarker([location.lat, location.lon], {
-                    radius: Math.sqrt(location.count) / 10,
+                    radius: Math.sqrt(totalVotes) / 10,
                     fillColor: "#007bff",
                     color: "#000",
                     weight: 1,
                     opacity: 1,
                     fillOpacity: 0.8
-                }).bindPopup(`<b>${ric.question}</b><br>Votes : ${location.count.toLocaleString()}<br>Niveau : ${ric.level}`);
+                }).bindPopup(`<b>${ric.question}</b><br>Votants : ${totalVotes.toLocaleString()}<br>Niveau : ${ric.level}`);
                 
                 ricMarkersLayer.addLayer(marker);
             });
@@ -179,16 +204,39 @@ function setupRicFormModal() {
 }
 
 /**
- * Gère la soumission du formulaire de RIC.
+ * Gère la soumission du formulaire de RIC en envoyant une requête POST à l'API du serveur.
  */
 function setupRicFormSubmission() {
     const form = document.getElementById('ric-form');
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            alert('Proposition soumise (action simulée) !');
-            hideModal();
-            initRicPage();
+            
+            const formData = new FormData(form);
+            const ricData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/rics', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(ricData)
+                });
+
+                if (response.ok) {
+                    const newRic = await response.json();
+                    alert(`Votre proposition "${newRic.question}" a été soumise avec succès et est en attente de validation.`);
+                    hideModal(); 
+                    initRicPage(); // Recharge les données
+                } else {
+                    const error = await response.json();
+                    alert(`Échec de la soumission : ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi du RIC:', error);
+                alert('Une erreur est survenue lors de la soumission. Veuillez réessayer.');
+            }
         });
     }
 }
@@ -217,22 +265,19 @@ function filterRics() {
     
     let filteredData = activeRicsData;
     
-    // Filtrage par niveau de scrutin
     if (levelFilterValue !== 'all') {
         filteredData = filteredData.filter(ric => ric.level === levelFilterValue);
     }
     
-    // Tri par nombre de votants
     if (sortFilterValue === 'voters') {
         filteredData.sort((a, b) => (b.votes_for + b.votes_against) - (a.votes_for + a.votes_against));
     }
     
-    // Affiche les données filtrées et triées
     loadRics(filteredData);
 }
 
 /**
- * Récupère les propositions de RIC depuis le fichier JSON et les affiche.
+ * Récupère les propositions de RIC et les affiche.
  * @param {Array} data Les données à afficher (optionnel, utilise activeRicsData par défaut).
  */
 function loadRics(data = activeRicsData) {
@@ -241,7 +286,7 @@ function loadRics(data = activeRicsData) {
 
     ricListContainer.innerHTML = '';
 
-    const dataToDisplay = data;
+    const dataToDisplay = data.filter(ric => ric.status !== 'en attente');
 
     if (dataToDisplay.length === 0) {
         ricListContainer.innerHTML = `<p>Aucune proposition de RIC active pour le moment.</p>`;
@@ -251,23 +296,111 @@ function loadRics(data = activeRicsData) {
     dataToDisplay.forEach(ric => {
         const card = document.createElement('div');
         card.className = 'card ric-card';
-        card.innerHTML = `
-            <h3>${ric.question}</h3>
-            <div class="card-footer">
-                <span>Pour : ${ric.votes_for.toLocaleString()}</span>
-                <span>Contre : ${ric.votes_against.toLocaleString()}</span>
-                <button class="btn btn-secondary vote-btn" data-id="${ric.id}">Voter</button>
-            </div>
-        `;
+        
+        const totalVotes = (ric.votes_for || 0) + (ric.votes_against || 0);
+        let cardContent;
+
+        if (ric.status === 'en attente') {
+            cardContent = `
+                <h3>${ric.question}</h3>
+                <p>Statut : <span style="color: #ffc107; font-weight: bold;">En attente de validation</span></p>
+                <p>Citoyens tirés au sort : ${ric.drawn_people || 0}</p>
+                <div class="card-footer">
+                    <span>Votes pour : ${ric.votes_for.toLocaleString()}</span>
+                    <span>Votes contre : ${ric.votes_against.toLocaleString()}</span>
+                </div>
+            `;
+        } else {
+            cardContent = `
+                <h3>${ric.question}</h3>
+                <p>Temps restant : <span id="countdown-${ric.id}"></span></p>
+                <div class="card-footer">
+                    <span>Votants : ${totalVotes.toLocaleString()}</span>
+                    <button class="btn btn-secondary vote-btn" data-id="${ric.id}">Voter</button>
+                    <button class="btn btn-secondary details-btn" data-id="${ric.id}">Détails</button>
+                </div>
+            `;
+        }
+        
+        card.innerHTML = cardContent;
         ricListContainer.appendChild(card);
         
-        // Ajout correct de l'écouteur d'événement pour le bouton "Voter"
-        card.querySelector('.vote-btn').addEventListener('click', () => showVoteModal(ric.id));
+        if (ric.status === 'active') {
+             startCountdown(ric.id, ric.deadline);
+        }
+        
+        // Ajout des écouteurs d'événements pour les boutons
+        const voteBtn = card.querySelector('.vote-btn');
+        if (voteBtn) {
+            voteBtn.addEventListener('click', () => showVoteModal(ric.id));
+        }
+        const detailsBtn = card.querySelector('.details-btn');
+        if (detailsBtn) {
+            detailsBtn.addEventListener('click', () => showRicDetailsModal(ric.id));
+        }
     });
 }
 
 /**
- * Affiche la modale pour voter sur un RIC.
+ * Démarre un compte à rebours pour un RIC donné.
+ * @param {string} ricId - L'ID du référendum.
+ * @param {string} deadline - La date butoir au format ISO.
+ */
+function startCountdown(ricId, deadline) {
+    const countdownElement = document.getElementById(`countdown-${ricId}`);
+    const deadlineDate = new Date(deadline).getTime();
+
+    const interval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = deadlineDate - now;
+
+        if (distance < 0) {
+            clearInterval(interval);
+            if (countdownElement) {
+                countdownElement.textContent = "Expiré";
+            }
+            updateRicStatusAndConductDraws();
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        if (countdownElement) {
+            countdownElement.textContent = `${days}j ${hours}h ${minutes}m ${seconds}s`;
+        }
+    }, 1000);
+}
+
+/**
+ * Affiche une modale avec les détails d'un RIC.
+ * @param {string} ricId - L'ID du référendum.
+ */
+function showRicDetailsModal(ricId) {
+    const ric = activeRicsData.find(r => r.id === ricId);
+    if (!ric) return;
+
+    const detailsTemplate = document.getElementById('ric-description-template');
+    if (!detailsTemplate) {
+        console.error("Template 'ric-description-template' non trouvé.");
+        return;
+    }
+    const modalContent = detailsTemplate.content.cloneNode(true);
+
+    const totalVotes = ric.votes_for + ric.votes_against;
+
+    modalContent.querySelector('#ric-modal-description').textContent = ric.description;
+    modalContent.querySelector('#ric-modal-deadline').textContent = `Date butoir : ${ric.deadline}`;
+    modalContent.querySelector('#ric-modal-votes').textContent = `Votes actuels : ${totalVotes.toLocaleString()}`;
+    modalContent.querySelector('#ric-modal-status').textContent = `Statut : ${ric.status}`;
+
+    showModal(`Détails du RIC : "${ric.question}"`, modalContent);
+}
+
+/**
+ * Affiche la modale pour voter sur un RIC et envoie la mise à jour à l'API.
  * @param {string} ricId - L'ID du référendum.
  */
 function showVoteModal(ricId) {
@@ -291,26 +424,69 @@ function showVoteModal(ricId) {
     const voteNoBtn = modalContent.querySelector('#vote-no-btn');
     
     if (voteYesBtn) {
-        voteYesBtn.addEventListener('click', () => {
-            alert(`Vote "OUI" enregistré pour le référendum "${ric.question}" !`);
-            ric.votes_for++;
-            hideModal();
-            loadRics();
+        voteYesBtn.addEventListener('click', async () => {
+            ric.votes_for++; // Incrémente le vote localement
+            
+            try {
+                // Envoie une requête PUT pour mettre à jour les données sur le serveur
+                const response = await fetch(`/api/rics/${ric.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ votes_for: ric.votes_for })
+                });
+
+                if (response.ok) {
+                    alert(`Vote "OUI" enregistré pour le référendum "${ric.question}" !`);
+                    hideModal();
+                    initRicPage(); // Recharge les données du serveur pour une mise à jour complète
+                } else {
+                    const error = await response.json();
+                    alert(`Échec du vote : ${error.error}`);
+                    ric.votes_for--; // Annule le changement local en cas d'échec
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi du vote:', error);
+                alert('Une erreur est survenue lors du vote. Veuillez réessayer.');
+                ric.votes_for--; // Annule le changement local en cas d'échec
+            }
         });
     }
 
     if (voteNoBtn) {
-        voteNoBtn.addEventListener('click', () => {
-            alert(`Vote "NON" enregistré pour le référendum "${ric.question}" !`);
-            ric.votes_against++;
-            hideModal();
-            loadRics();
+        voteNoBtn.addEventListener('click', async () => {
+            ric.votes_against++; // Incrémente le vote localement
+
+            try {
+                // Envoie une requête PUT pour mettre à jour les données sur le serveur
+                const response = await fetch(`/api/rics/${ric.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ votes_against: ric.votes_against })
+                });
+
+                if (response.ok) {
+                    alert(`Vote "NON" enregistré pour le référendum "${ric.question}" !`);
+                    hideModal();
+                    initRicPage(); // Recharge les données du serveur pour une mise à jour complète
+                } else {
+                    const error = await response.json();
+                    alert(`Échec du vote : ${error.error}`);
+                    ric.votes_against--; // Annule le changement local en cas d'échec
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi du vote:', error);
+                alert('Une erreur est survenue lors du vote. Veuillez réessayer.');
+                ric.votes_against--; // Annule le changement local en cas d'échec
+            }
         });
     }
     
     showModal(`Voter sur le RIC : "${ric.question}"`, modalContent);
 }
 
-// L'ancienne fonction initRicMap a été remplacée par la logique de la modale.
-// J'ai gardé le même nom pour la lisibilité, mais elle ne fait plus rien.
+// L'ancienne fonction initRicMap est remplacée par la logique de la modale.
 function initRicMap() {}

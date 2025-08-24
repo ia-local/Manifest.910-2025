@@ -1,3 +1,4 @@
+// Fichier : serveur.js
 // --- Dépendances et initialisation ---
 require('dotenv').config();
 const express = require('express');
@@ -16,7 +17,7 @@ const bot = new Telegraf('7281441282:AAGmRKFY2yDZ0BlkSW0hZpMWSLwsiTRYYCQ', {
     telegram: {
       webhookReply: true,
     },
-  });
+});
 let chatLog = {};
 
 const groq = new Groq({
@@ -460,51 +461,85 @@ app.post('/api/affaires/event', async (req, res) => {
     res.status(201).json(newEvent);
 });
 
-// RICS
+// RICs
+const RICS_FILE_PATH = path.join(__dirname, 'data', 'rics.json');
+let ricsData = [];
+
+// Fonction pour lire le fichier rics.json
+async function readRicsFile() {
+    try {
+        const data = await fs.readFile(RICS_FILE_PATH, { encoding: 'utf8' });
+        ricsData = JSON.parse(data);
+        console.log('Données RIC chargées avec succès.');
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.warn('Le fichier rics.json n\'existe pas, initialisation avec un tableau vide.');
+            ricsData = [];
+            await writeRicsFile();
+        } else {
+            console.error('Erreur fatale lors du chargement de rics.json:', error);
+            process.exit(1);
+        }
+    }
+}
+
+// Fonction pour écrire dans le fichier rics.json
+async function writeRicsFile() {
+    try {
+        await fs.writeFile(RICS_FILE_PATH, JSON.stringify(ricsData, null, 2), { encoding: 'utf8' });
+        console.log('Écriture de rics.json terminée avec succès.');
+    } catch (error) {
+        console.error('Erreur lors de l\'écriture de rics.json:', error);
+    }
+}
+
 // Route pour obtenir tous les RIC
 app.get('/api/rics', (req, res) => {
-    res.json(database.rics);
+    res.json(ricsData);
 });
 
-// Route pour créer un nouveau RIC
+// Route pour créer un nouveau RIC via le formulaire
 app.post('/api/rics', async (req, res) => {
-    const { question, description, deadline, voteMethod } = req.body;
+    const { question, description, deadline, voteMethod, level, locations } = req.body;
+    
     const newRic = {
-        id: uuidv4(), // Génère un ID unique
+        id: uuidv4(), 
         question,
         description,
         deadline,
         voteMethod,
+        level,
+        locations,
         votes_for: 0,
         votes_against: 0,
-        status: 'active',
-        locations: []
+        status: 'active' 
     };
-    database.rics.push(newRic);
-    await writeDatabaseFile();
+    
+    ricsData.push(newRic);
+    await writeRicsFile();
+    
     res.status(201).json(newRic);
 });
 
 // Route pour mettre à jour les votes d'un RIC
 app.put('/api/rics/:id', async (req, res) => {
     const ricId = req.params.id;
-    const { vote_type } = req.body; // 'for' ou 'against'
+    const { votes_for, votes_against } = req.body;
 
-    const ric = database.rics.find(r => r.id === ricId);
+    const ric = ricsData.find(r => r.id === ricId);
 
     if (!ric) {
         return res.status(404).json({ error: 'Référendum non trouvé.' });
     }
 
-    if (vote_type === 'for') {
-        ric.votes_for++;
-    } else if (vote_type === 'against') {
-        ric.votes_against++;
-    } else {
-        return res.status(400).json({ error: 'Type de vote invalide.' });
+    if (typeof votes_for !== 'undefined') {
+        ric.votes_for = votes_for;
+    }
+    if (typeof votes_against !== 'undefined') {
+        ric.votes_against = votes_against;
     }
     
-    await writeDatabaseFile();
+    await writeRicsFile();
     res.status(200).json(ric);
 });
 
@@ -590,7 +625,7 @@ app.get('/api/dashboard/summary', (req, res) => {
     const riskyEntities = new Set(database.boycotts.map(b => b.name)).size;
     const caisseSolde = database.caisse_manifestation.solde;
     const boycottCount = database.boycotts.length;
-    const ricCount = database.rics.length;
+    const ricCount = ricsData.length; // Utilisez ricsData ici
     res.json({
         totalTransactions,
         activeAlerts,
@@ -603,6 +638,7 @@ app.get('/api/dashboard/summary', (req, res) => {
 
 // --- Démarrage du serveur ---
 initializeDatabase().then(() => {
+    readRicsFile(); // Lecture du fichier rics.json séparément
     bot.launch();
     console.log('Bot Telegram démarré.');
 
