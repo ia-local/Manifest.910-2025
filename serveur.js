@@ -13,7 +13,7 @@ const YAML = require('yamljs');
 // --- Initialisation des API et des serveurs ---
 const app = express();
 const port = process.env.PORT || 3000;
-const bot = new Telegraf('7281441282:AAGmRKFY2yDZ0BlkSW0hZpMWSLwsiTRYYCQ', {
+const bot = new Telegraf('7219104241:AAG2biLtqAucVucjHp1bSrjxnoxXWdNU2K0', {
     telegram: {
       webhookReply: true,
     },

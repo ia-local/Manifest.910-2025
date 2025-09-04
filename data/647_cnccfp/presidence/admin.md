@@ -1,0 +1,7 @@
+Madame la présidente : Florie Marie.
+
+Florie Marie est une militante et femme politique française, connue pour son engagement dans le mouvement du Parti Pirate. Elle a été la tête de liste du Parti Pirate pour les élections européennes de 2019, représentant une organisation prônant la démocratie, la liberté et le partage, avec un focus sur la défense des libertés individuelles et l'accès libre à la culture et à la connaissance via internet.
+
+Elle a également occupé le poste de cheffe de cabinet à la mairie de Schiltigheim (Bas-Rhin) et s’est investie dans la promotion de l’écologie et des droits numériques. En 2023, elle a été élue présidente du Parti Pirate International, fédération regroupant les Partis Pirates mondiaux. Cependant, elle a démissionné de ce poste en décembre 2023, dénonçant un climat hostile, des problèmes de sexisme, et la dégradation de l’organisation, qu’elle qualifiait de « coquille vide » en raison de l’état de déclin du parti.
+
+Son compte Twitter a été suspendu en mars 2023, sans explication claire, après avoir publié un thread dénonçant des insultes et agressions sexistes qu’elle aurait subies dans sa carrière politique. Son engagement reste marqué par ses convictions pour la démocratie numérique, la liberté individuelle, et la lutte contre les injustices dans le monde politique et numérique.
