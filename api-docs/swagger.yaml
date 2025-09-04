@@ -23,6 +23,8 @@ tags:
     description: Gestion des listes de boycott (films, banques, commerces, produits, etc.).
   - name: Taxation
     description: Définition des règles de taxation pour la caisse de manifestation.
+  - name: Géolocalisation
+    description: Endpoints pour les données géographiques.
 
 paths:
   /api/financial-flows:
@@ -157,7 +159,7 @@ paths:
   /api/rics/{id}:
     put:
       tags:
-        - Pétitions
+        - RIC
       summary: Met à jour une pétition existante.
       parameters:
         - name: id
@@ -170,7 +172,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PetitionInput'
+              $ref: '#/components/schemas/RicInput'
       responses:
         '200':
           description: Pétition mise à jour.
@@ -178,7 +180,7 @@ paths:
           description: Pétition non trouvée.
     delete:
       tags:
-        - Pétitions
+        - RIC
       summary: Supprime une pétition.
       parameters:
         - name: id
@@ -351,7 +353,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Boycott'
-                
+  
   /api/boycotts/{id}:
     put:
       tags:
@@ -404,6 +406,82 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Tax'
+    post:
+      tags:
+        - Taxation
+      summary: Ajoute une nouvelle règle de taxation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaxInput'
+      responses:
+        '201':
+          description: Règle de taxation créée.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tax'
+
+  /api/prefectures:
+    get:
+      tags:
+        - Géolocalisation
+      summary: Récupère les données de toutes les préfectures.
+      responses:
+        '200':
+          description: Liste des préfectures.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Prefecture'
+
+  /api/telegram-sites:
+    get:
+      tags:
+        - Géolocalisation
+      summary: Récupère les données des sites de manifestation sur Telegram.
+      responses:
+        '200':
+          description: Liste des sites Telegram.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ManifestationSite'
+  
+  /api/manifestation-sites:
+    get:
+      tags:
+        - Géolocalisation
+      summary: Récupère les données de tous les sites de manifestation.
+      responses:
+        '200':
+          description: Liste des sites de manifestation.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ManifestationSite'
+
+  /api/dashboard/summary:
+    get:
+      tags:
+        - Outils IA
+      summary: Récupère un résumé des données pour le tableau de bord.
+      responses:
+        '200':
+          description: Données de résumé du tableau de bord.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+
 
 components:
   schemas:
@@ -546,8 +624,10 @@ components:
           type: string
         description:
           type: string
-        geo:
-          $ref: '#/components/schemas/GeoCoordinates'
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
     EntityInput:
       type: object
       properties:
@@ -557,20 +637,28 @@ components:
           type: string
         description:
           type: string
-        geo:
-          $ref: '#/components/schemas/GeoCoordinates'
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
       required:
         - name
         - type
         - description
-        - geo
-    GeoCoordinates:
+        - locations
+    Location:
       type: object
       properties:
         lat:
           type: number
         lon:
           type: number
+        city:
+          type: string
+        country:
+          type: string
+        country_code:
+          type: string
     CaisseManifestation:
       type: object
       properties:
@@ -631,6 +719,13 @@ components:
           description: Liste des cibles spécifiques.
           items:
             $ref: '#/components/schemas/BoycottTarget'
+        description:
+          type: string
+          description: Description de l'entité.
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
     BoycottInput:
       type: object
       properties:
@@ -648,16 +743,19 @@ components:
           description: Liste des cibles spécifiques.
           items:
             $ref: '#/components/schemas/BoycottTargetInput'
+        description:
+          type: string
+          description: Description de l'entité.
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
       required:
         - type
         - name
-        - reason
-        - targets
     BoycottTarget:
       type: object
       properties:
-        id:
-          type: string
         name:
           type: string
           description: Nom du produit/service/entité ciblé(e) (ex: "Billet de cinéma").
@@ -682,7 +780,6 @@ components:
         id:
           type: string
           description: Identifiant unique de la règle de taxation.
-          enum: ["tax_tfa", "tax_production", "tax_vat", "tax_campaign"]
         name:
           type: string
           description: Nom de la taxe.
@@ -695,3 +792,53 @@ components:
         applicable_to:
           type: string
           description: Domaine d'application de la taxe.
+    TaxInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        rate:
+          type: number
+        applicable_to:
+          type: string
+    Prefecture:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+    ManifestationSite:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+    DashboardSummary:
+      type: object
+      properties:
+        totalTransactions:
+          type: integer
+          description: Nombre total de transactions.
+        activeAlerts:
+          type: integer
+          description: Nombre de transactions suspectes.
+        riskyEntities:
+          type: integer
+          description: Nombre d'entités "à risque".
+        caisseSolde:
+          type: number
+          description: Solde actuel de la caisse de manifestation.
+        boycottCount:
+          type: integer
+          description: Nombre total d'éléments de la liste de boycott.
+        ricCount:
+          type: integer
+          description: Nombre total de RICS.
