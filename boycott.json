@@ -38,7 +38,7 @@
     {
       "id": "b_movie_1",
       "type": "movie",
-      "name": "Film 'Le Traître' de Dupont",
+      "name": "Film 'bad guy 2",
       "reason": "Promotion de politiques toxiques par le réalisateur.",
       "targets": [
         {
@@ -278,5 +278,12 @@
     "transactions": []
   },
   "polls": [],
-  "organizers": []
+  "organizers": [],
+  "beneficiaries": [],
+  "cv_contracts": [],
+  "manifestation_points": [
+    { "city": "Caen", "lat": 49.183333, "lon": -0.350000, "count": 6000 },
+    { "city": "Rennes", "lat": 48.11197912, "lon": -1.68186449, "count": 15000 },
+    { "city": "Grenoble", "lat": 45.185, "lon": 5.725, "count": 30000 }
+  ]
 }

@@ -262,5 +262,21 @@
     "transactions": []
   },
   "polls": [],
-  "organizers": []
+  "organizers": [],
+"manifestation_points": [
+    { "city": "Caen", "lat": 49.183333, "lon": -0.350000, "count": 6000, "video_link": null },
+    { "city": "Rennes", "lat": 48.11197912, "lon": -1.68186449, "count": 15000, "video_link": null },
+    { "city": "Grenoble", "lat": 45.185, "lon": 5.725, "count": 30000, "video_link": "https://www.youtube.com/watch?v=ZvUkt9Y2uKk"},
+    { "city": "Paris", "lat": 48.8566, "lon": 2.3522, "count": "Plusieurs milliers", "video_link": "https://www.youtube.com/watch?v=ZvUkt9Y2uKk" },
+    { "city": "Saint-Malo", "lat": 48.6493, "lon": -2.0076, "count": 170, "video_link": "https://www.youtube.com/watch?v=example-video-st-malo" },
+    { "city": "Fougères", "lat": 48.3519, "lon": -1.205, "count": 380, "video_link": "https://www.youtube.com/watch?v=example-video-fougeres" }
+],
+    "strategic_locations": [
+    { "name": "Hôpital Lariboisière", "city": "Paris", "type": "Hôpital", "lat": 48.882, "lon": 2.355 },
+    { "name": "Université de la Sorbonne", "city": "Paris", "type": "Université", "lat": 48.846, "lon": 2.345 },
+    { "name": "CHU de Rennes", "city": "Rennes", "type": "Hôpital", "lat": 48.114, "lon": -1.691 },
+    { "name": "Université de Rennes 1", "city": "Rennes", "type": "Université", "lat": 48.116, "lon": -1.680 },
+    { "name": "Hôpital Michallon", "city": "Grenoble", "type": "Hôpital", "lat": 45.189, "lon": 5.722 },
+    { "name": "Université Grenoble Alpes", "city": "Grenoble", "type": "Université", "lat": 45.204, "lon": 5.768 }
+  ]
 }

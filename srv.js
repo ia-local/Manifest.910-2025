@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const Web3 = require('web3');
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // Nouvelle dépendance
 
 // --- Initialisation des API et des serveurs ---
 const app = express();
@@ -25,6 +26,8 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
+// Initialisation de l'API Google Gemini pour la génération d'images
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Initialisation des variables de rôles (avec valeurs par défaut pour la robustesse)
 let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
@@ -44,10 +47,33 @@ app.get('/api/prefectures', (req, res) => {
     res.json(database.prefectures);
 });
 
+// Données de référence de la réforme
+const gouv_lawArticles = {
+    objectifs: [
+        "Améliorer la valorisation des compétences.",
+        "Favoriser la formation et la professionnalisation.",
+        "Encourager l'innovation et la création d'emplois qualifiés."
+    ],
+    modifications: {
+        L3121_1: "Définition du travail pour inclure la monétisation des compétences basée sur le CVNU.",
+        L4331_1: "Smart contracts pour la sécurisation et la transparence des transactions liées à la monétisation des compétences.",
+        L3222_1: "Redéfinition de la durée légale de travail et de sa monétisation.",
+        L4334_1: "Utilisation de la TVA pour financer la formation et l'emploi en fonction des compétences validées sur le CVNU.",
+        L4333_1: "Suivi régulier de la répartition des recettes de la TVA."
+    },
+    reference_cgi: {
+        article256: "Cet article du CGI définit le champ d'application de la TVA en France. La réforme propose de réaffecter une fraction de cette taxe existante pour financer les dispositifs de formation et d'emploi."
+    }
+};
+
 app.get('/api/telegram-sites', (req, res) => {
     res.json(database.telegram_sites); // Utilise le nouveau nom dans la DB
 });
 
+// NOUVEAU: Point de terminaison pour les données de manifestation
+app.get('/api/manifestation-points', (req, res) => {
+    res.json(database.manifestation_points);
+});
 
 const swaggerDocumentPath = path.join(__dirname, 'api-docs', 'swagger.yaml');
 let swaggerDocument = {};
@@ -66,8 +92,6 @@ let boycottsData = {};
 
 let writeQueue = Promise.resolve();
 let isWriting = false;
-
-app.get('/api/manifestation-sites', (req, res) => res.json(database.manifestation_sites));
 
 async function writeDatabaseFile() {
     writeQueue = writeQueue.then(async () => {
@@ -106,7 +130,13 @@ async function initializeDatabase() {
                 polls: [],
                 organizers: [],
                 beneficiaries: [], // AJOUT: Tableau pour les bénéficiaires
-                cv_contracts: [] // AJOUT: Représentation des smart contracts CV
+                cv_contracts: [], // AJOUT: Représentation des smart contracts CV
+                // NOUVEAU: Données de manifestation
+                manifestation_points: [
+                    { "city": "Caen", "lat": 49.183333, "lon": -0.350000, "count": 6000 },
+                    { "city": "Rennes", "lat": 48.11197912, "lon": -1.68186449, "count": 15000 },
+                    { "city": "Grenoble", "lat": 45.185, "lon": 5.725, "count": 30000 }
+                ]
             };
             await writeDatabaseFile();
         } else {
@@ -319,6 +349,7 @@ bot.action('show_help', async (ctx) => {
 /inviter - Inviter des amis à rejoindre le bot et le mouvement
 /contact [votre message] - Envoyer un message aux organisateurs
 /stats - Afficher les statistiques d'utilisation du bot
+/imagine [description] - Créer une image à partir d'une description textuelle
 /aboutai - En savoir plus sur mon fonctionnement
 /help - Afficher ce message d'aide
 `;
@@ -326,7 +357,7 @@ bot.action('show_help', async (ctx) => {
 });
 
 
-bot.help((ctx) => ctx.reply('Commandes disponibles: /start, /aide, /manifeste, /ric, /destitution, /create_poll, /stats'));
+bot.help((ctx) => ctx.reply('Commandes disponibles: /start, /aide, /manifeste, /ric, /destitution, /create_poll, /stats, /imagine'));
 
 // Commande /stats : affiche des statistiques d'utilisation du bot
 bot.command('stats', async (ctx) => {
@@ -340,35 +371,18 @@ bot.command('manifeste', (ctx) => {
     ctx.reply('Le Manifeste du mouvement pour le 10 septembre est le suivant...');
 });
 
-
-
 // Nouvelle commande : /destitution
 async function getDestitutionInfoMarkdown() {
-    return `**La Procédure de Destitution : L'Article 68 de la Constitution**
-\nL'Article 68 de la Constitution française prévoit la possibilité de destituer le Président de la République en cas de manquement à ses devoirs manifestement incompatible avec l'exercice de son mandat.
-
-\n\nNotre mouvement demande une application rigoureuse et transparente de cet article, et la mise en place de mécanismes citoyens pour initier et suivre cette procédure.
-\nPour le moment, nous recueillons les avis et les soutiens via des sondages et des discussions au sein du bot.
-`;
+    return `**La Procédure de Destitution : L'Article 68 de la Constitution** \nL'Article 68 de la Constitution française prévoit la possibilité de destituer le Président de la République en cas de manquement à ses devoirs manifestement incompatible avec l'exercice de son mandat. \n https://petitions.assemblee-nationale.fr/initiatives/i-2743 \n\nNotre mouvement demande une application rigoureuse et transparente de cet article, et la mise en place de mécanismes citoyens pour initier et suivre cette procédure. \nPour le moment, nous recueillons les avis et les soutiens via des sondages et des discussions au sein du bot. `;
 }
 
 bot.command('destitution', async (ctx) => {
     await ctx.replyWithMarkdown(await getDestitutionInfoMarkdown());
 });
 
-
 // Fonctions pour les informations RIC et Destitution (utilisées par commandes et actions)
 async function getRicInfoMarkdown() {
-    return `**Le Référendum d'Initiative Citoyenne (RIC) : Le Cœur de notre Démocratie !**
-Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décline en plusieurs formes :
-\n* **RIC Législatif :** Proposer et voter des lois.
-\n* **RIC Abrogatoire :** Annuler une loi existante.
-\n* **RIC Constituant :** Modifier la Constitution.
-\n* **RIC Révocatoire :** Destituer un élu.
-
-\n\nC'est la garantie que notre voix sera directement entendue et respectée.
-\nNous organisons des sondages réguliers et des débats au sein du bot pour recueillir votre opinion et votre soutien sur le RIC. Utilisez la commande /sondage pour participer !
-`;
+    return `**Le Référendum d'Initiative Citoyenne (RIC) : Le Cœur de notre Démocratie !** Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décline en plusieurs formes : \n* **RIC Législatif :** Proposer et voter des lois. \n* **RIC Abrogatoire :** Annuler une loi existante. \n* **RIC Constituant :** Modifier la Constitution. \n* **RIC Révocatoire :** Destituer un élu. \n\nC'est la garantie que notre voix sera directement entendue et respectée. \nNous organisons des sondages réguliers et des débats au sein du bot pour recueillir votre opinion et votre soutien sur le RIC. Utilisez la commande /sondage pour participer ! `;
 }
 
 // Nouvelle commande : /ric
@@ -376,377 +390,64 @@ bot.command('ric', async (ctx) => {
     await ctx.replyWithMarkdown(await getRicInfoMarkdown());
 });
 
-
-bot.command('create_poll', async (ctx) => {
-    const question = 'Quel sujet devrions-nous aborder dans le prochain live ?';
-    const options = ['Justice Sociale', 'Justice Fiscale', 'Justice Climatique'];
-
-    try {
-        const message = await ctx.replyWithPoll(question, options, { is_anonymous: false });
-        const pollId = uuidv4();
-        database.polls.push({
-            id: pollId,
-            messageId: message.message_id,
-            question: question,
-            options: options.map(opt => ({ text: opt, votes: 0 })),
-            creatorId: ctx.from.id
-        });
-        await writeDatabaseFile();
-    } catch (error) {
-        console.error('Erreur lors de la création du sondage:', error);
-    }
-});
-
-bot.on('poll_answer', async (ctx) => {
-    const pollIndex = database.polls.findIndex(p => p.messageId === ctx.pollAnswer.poll_id);
-    
-    if (pollIndex !== -1) {
-        ctx.pollAnswer.option_ids.forEach(optionIndex => {
-            database.polls[pollIndex].options[optionIndex].votes++;
-        });
-        await writeDatabaseFile();
-    }
-});
-
-
-// Traitement des messages texte généraux par l'IA (Groq)
-
-bot.on('text', async (ctx) => {
-    try {
-        const stats = await readJsonFile(STATS_FILE, { totalMessages: 0 });
-        stats.totalMessages = (stats.totalMessages || 0) + 1;
-        await writeJsonFile(STATS_FILE, stats);
-    } catch (error) {
-        console.error('Erreur lors de la mise à jour du compteur de messages:', error);
-    }
-
-    if (ctx.message.text.startsWith('/')) {
-        return; // Ne pas traiter les commandes comme des messages de conversation IA
-    }
-    await ctx.replyWithChatAction('typing');
-
-    try {
-        const userMessage = ctx.message.text;
-        const aiResponse = await getGroqChatResponse(
-            userMessage,
-            'gemma2-9b-it', // Le modèle Groq que vous utilisez
-            rolesAssistant.assistant.content // Rôle Assistant pour Telegram
-        );
-        await ctx.reply(aiResponse);
-    } catch (error) {
-        console.error('Échec de la génération de la réponse IA (Telegram) avec gemma2-9b-it:', error);
-        await ctx.reply('Une erreur est survenue lors du traitement de votre demande de conversation IA. Veuillez vérifier la configuration de l\'IA ou réessayer plus tard.');
-    }
-});
-
-// Commande /contact pour envoyer un message aux organisateurs
-
-bot.command('contact', async (ctx) => {
-    const messageContent = ctx.message.text.split(' ').slice(1).join(' ');
-    if (!messageContent) {
-        await ctx.reply('Veuillez fournir le message que vous souhaitez envoyer aux organisateurs. Exemple: /contact J\'ai une idée pour la grève.');
+// COMMANDE CORRIGÉE ET SIMPLIFIÉE : /imagine [description]
+bot.command('imagine', async (ctx) => {
+    const topic = ctx.message.text.split(' ').slice(1).join(' ');
+    if (!topic) {
+        await ctx.reply("Veuillez fournir une description pour l'image. Exemple: /imagine un chien en costume.");
         return;
     }
-
-    if (ORGANIZER_GROUP_ID) {
-        try {
-            await bot.telegram.sendMessage(ORGANIZER_GROUP_ID, `Nouveau message de l'utilisateur ${ctx.from.first_name} (${ctx.from.username || 'ID: ' + ctx.from.id}) :\n\n${messageContent}`);
-            await ctx.reply('Votre message a été transmis aux organisateurs. Merci !');
-        } catch (error) {
-            console.error('Erreur lors de l\'envoi du message aux organisateurs:', error);
-            await ctx.reply('Désolé, je n\'ai pas pu transmettre votre message aux organisateurs. Veuillez réessayer plus tard.');
-        }
-    } else {
-        await ctx.reply('Le canal de contact des organisateurs n\'est pas configuré. Veuillez contacter l\'administrateur du bot.');
-    }
-});
-
-
-// --- Routes de l'API web (CRUD) ---
-
-// FINANCIAL FLOWS
-app.get('/api/financial-flows', (req, res) => res.json(database.financial_flows));
-app.post('/api/financial-flows', async (req, res) => {
-    const newFlow = { id: uuidv4(), ...req.body, timestamp: new Date().toISOString() };
-    
-    // Logique de boycottage inconscient
-    const isBoycotted = boycottsData.boycotts.some(boycott => {
-        // La structure de votre fichier `boycott.json` a un champ `name` au niveau racine
-        // et un champ `targets` qui est un tableau. La logique est d'abord de vérifier
-        // le `name`, puis de parcourir le tableau `targets` si un nom correspond.
-        // Puisque la route `financial-flows` n'a pas de concept de "cibles",
-        // nous allons simplement vérifier le champ `name` de la transaction.
-        return boycott.name.toLowerCase() === newFlow.name.toLowerCase();
-    });
-
-    if (isBoycotted) {
-        console.log(`Transaction vers une entité boycottée. Réaffectation de la TVA...`);
-        // Calcule le montant de la TVA (20% dans notre modèle)
-        const tvaAmount = newFlow.amount * 0.2;
-
-        try {
-            // Appelle l'endpoint interne pour envoyer la TVA au smart contract
-            await fetch(`http://localhost:${port}/api/blockchain/recevoir-fonds`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: tvaAmount })
-            });
-            console.log(`TVA de ${tvaAmount}€ envoyée au smart contract.`);
-            newFlow.blockchain_status = 'TVA_AFFECTEE';
-        } catch (error) {
-            console.error('Erreur lors de la réaffectation de la TVA:', error);
-            newFlow.blockchain_status = 'ECHEC_AFFECTATION';
-        }
-    }
-
-    database.financial_flows.push(newFlow);
-    await writeDatabaseFile();
-    res.status(201).json(newFlow);
-});
-app.put('/api/financial-flows/:id', async (req, res) => {
-    const index = database.financial_flows.findIndex(f => f.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'Flux non trouvé.' });
-    database.financial_flows[index] = { ...database.financial_flows[index], ...req.body };
-    await writeDatabaseFile();
-    res.json(database.financial_flows[index]);
-});
-app.delete('/api/financial-flows/:id', async (req, res) => {
-    const index = database.financial_flows.findIndex(f => f.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'Flux non trouvé.' });
-    database.financial_flows.splice(index, 1);
-    await writeDatabaseFile();
-    res.status(204).end();
-});
-
-// AFFAIRES
-app.get('/api/affaires', (req, res) => res.json(database.affaires));
-app.post('/api/affaires/event', async (req, res) => {
-    const newEvent = { id: uuidv4(), ...req.body };
-    database.affaires.chronology.push(newEvent);
-    await writeDatabaseFile();
-    res.status(201).json(newEvent);
-});
-
-// RICs
-const RICS_FILE_PATH = path.join(__dirname, 'data', 'rics.json');
-let ricsData = [];
-
-// Fonction pour lire le fichier rics.json
-async function readRicsFile() {
+    await ctx.reply('Génération de votre image...');
     try {
-        const data = await fs.readFile(RICS_FILE_PATH, { encoding: 'utf8' });
-        ricsData = JSON.parse(data);
-        console.log('Données RIC chargées avec succès.');
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            console.warn('Le fichier rics.json n\'existe pas, initialisation avec un tableau vide.');
-            ricsData = [];
-            await writeRicsFile();
+        const imageResponse = await genAI.getGeneratedImage(topic);
+        if (imageResponse && imageResponse.url) {
+            await ctx.replyWithPhoto({ url: imageResponse.url });
         } else {
-            console.error('Erreur fatale lors du chargement de rics.json:', error);
-            process.exit(1);
+            await ctx.reply("Désolé, je n'ai pas pu générer l'image. Le service est peut-être temporairement indisponible.");
         }
-    }
-}
-
-// Fonction pour écrire dans le fichier rics.json
-async function writeRicsFile() {
-    try {
-        await fs.writeFile(RICS_FILE_PATH, JSON.stringify(ricsData, null, 2), { encoding: 'utf8' });
-        console.log('Écriture de rics.json terminée avec succès.');
     } catch (error) {
-        console.error('Erreur lors de l\'écriture de rics.json:', error);
+        console.error('Erreur lors de la génération de l\'image:', error);
+        await ctx.reply("Désolé, une erreur est survenue lors de la génération de l'image.");
     }
-}
-
-// Route pour obtenir tous les RIC
-app.get('/api/rics', (req, res) => {
-    res.json(ricsData);
 });
 
-// Route pour créer un nouveau RIC via le formulaire
-app.post('/api/rics', async (req, res) => {
-    const { question, description, deadline, voteMethod, level, locations } = req.body;
-    
-    const newRic = {
-        id: uuidv4(), 
-        question,
-        description,
-        deadline,
-        voteMethod,
-        level,
-        locations,
-        votes_for: 0,
-        votes_against: 0,
-        status: 'active' 
+// --- Gestion des endpoints pour l'application web ---
+
+app.get('/api/dashboard/summary', (req, res) => {
+    const totalManifestants = Object.values(database.manifestation_points).reduce((sum, item) => sum + item.count, 0);
+    const summary = {
+        total_participants: totalManifestants
     };
-    
-    ricsData.push(newRic);
-    await writeRicsFile();
-    
-    res.status(201).json(newRic);
+    res.json(summary);
 });
 
-// Route pour mettre à jour les votes d'un RIC
-app.put('/api/rics/:id', async (req, res) => {
-    const ricId = req.params.id;
-    const { votes_for, votes_against } = req.body;
 
-    const ric = ricsData.find(r => r.id === ricId);
-
-    if (!ric) {
-        return res.status(404).json({ error: 'Référendum non trouvé.' });
-    }
-
-    if (typeof votes_for !== 'undefined') {
-        ric.votes_for = votes_for;
-    }
-    if (typeof votes_against !== 'undefined') {
-        ric.votes_against = votes_against;
-    }
-    
-    await writeRicsFile();
-    res.status(200).json(ric);
-});
-
-// TAXES
-app.get('/api/taxes', (req, res) => res.json(database.taxes));
-app.post('/api/taxes', async (req, res) => {
-    const newTax = { id: uuidv4(), ...req.body };
-    database.taxes.push(newTax);
-    await writeDatabaseFile();
-    res.status(201).json(newTax);
-});
-
-// ENTITIES
-app.get('/api/entities', (req, res) => res.json(database.entities));
-app.post('/api/entities', async (req, res) => { /* ... */ });
-app.put('/api/entities/:id', async (req, res) => { /* ... */ });
-app.delete('/api/entities/:id', async (req, res) => { /* ... */ });
-
-// BOYCOTTS (Nouvelle route pour le frontend)
-// ROUTES CRUD POUR LES BOYCOTTAGES
-app.get('/api/boycotts', (req, res) => res.json(database.boycotts));
-
-// Route pour ajouter une nouvelle enseigne (CREATE)
 app.post('/api/boycotts', async (req, res) => {
     const newEntity = req.body;
-    // Générer un ID simple (UUID ou autre pour un projet plus grand)
-    newEntity.id = `ent_${Date.now()}`; 
-    database.boycotts.push(newEntity);
-    await writeDatabaseFile();
-    res.status(201).json(newEntity);
-});
+    if (!newEntity || !newEntity.name || !newEntity.type || !newEntity.description) {
+        return res.status(400).json({ error: 'Données d\'entité manquantes.' });
+    }
 
-// Route pour mettre à jour une enseigne (UPDATE)
-app.put('/api/boycotts/:id', async (req, res) => {
-    const { id } = req.params;
-    const updatedEntity = req.body;
-    const index = database.boycotts.findIndex(e => e.id === id);
-    if (index !== -1) {
-        database.boycotts[index] = { ...database.boycotts[index], ...updatedEntity };
-        await writeDatabaseFile();
-        res.json(database.boycotts[index]);
-    } else {
-        res.status(404).json({ message: "Entité non trouvée" });
+    try {
+        if (!boycottsData.boycotts) {
+            boycottsData.boycotts = [];
+        }
+        boycottsData.boycotts.push(newEntity);
+        await writeJsonFile(BOYCOTT_FILE_PATH, boycottsData);
+        res.status(201).json({ message: 'Entité ajoutée avec succès.', data: newEntity });
+    } catch (error) {
+        console.error('Erreur lors de l\'ajout d\'une entité de boycottage:', error);
+        res.status(500).json({ error: 'Erreur lors de l\'ajout de l\'entité.' });
     }
 });
 
-// Route pour supprimer une enseigne (DELETE)
-app.delete('/api/boycotts/:id', async (req, res) => {
-    const { id } = req.params;
-    const initialLength = database.boycotts.length;
-    database.boycotts = database.boycotts.filter(e => e.id !== id);
-    if (database.boycotts.length < initialLength) {
-        await writeDatabaseFile();
-        res.status(204).send(); // No Content
-    } else {
-        res.status(404).json({ message: "Entité non trouvée" });
-    }
+
+app.get('/api/boycotts', (req, res) => {
+    res.json(boycottsData.boycotts);
 });
 
-// CAISSE DE MANIFESTATION
-app.get('/api/caisse-manifestation', (req, res) => res.json(database.caisse_manifestation));
-app.post('/api/caisse-manifestation/transaction', async (req, res) => {
-    const { type, montant, description } = req.body;
-    const newTransaction = { id: uuidv4(), type, montant, description, date: new Date().toISOString() };
-    database.caisse_manifestation.transactions.push(newTransaction);
-    database.caisse_manifestation.solde += (type === 'entrée' ? montant : -montant);
-    await writeDatabaseFile();
-    res.status(201).json(newTransaction);
-});
 
-// Blockchain
-app.post('/api/blockchain/transaction', async (req, res) => {
-    const newBlock = { id: uuidv4(), ...req.body, hash: '...', signature: '...', timestamp: new Date().toISOString() };
-    database.blockchain.transactions.push(newBlock);
-    await writeDatabaseFile();
-    res.status(201).json(newBlock);
-});
-
-// Dashboard Summary
-app.get('/api/dashboard/summary', (req, res) => {
-    const totalTransactions = database.financial_flows.length;
-    const activeAlerts = database.financial_flows.filter(f => f.is_suspicious).length;
-    const riskyEntities = new Set(database.boycotts.map(b => b.name)).size;
-    const caisseSolde = database.caisse_manifestation.solde;
-    const boycottCount = database.boycotts.length;
-    const ricCount = ricsData.length; // Utilisez ricsData ici
-    const beneficiaryCount = database.beneficiaries.length;
-    // Calcul de l'allocation mensuelle basée sur le solde et le nombre de bénéficiaires
-    const monthlyAllocation = beneficiaryCount > 0 ? (caisseSolde / beneficiaryCount) : 0;
-    
-    res.json({
-        totalTransactions,
-        activeAlerts,
-        riskyEntities,
-        caisseSolde,
-        boycottCount,
-        ricCount,
-        beneficiaryCount,
-        monthlyAllocation
-    });
-});
-
-// --- Routes de la Blockchain ---
-app.post('/api/blockchain/recevoir-fonds', async (req, res) => {
-    const { amount } = req.body;
-    if (!amount) {
-        return res.status(400).json({ error: 'Montant manquant.' });
-    }
-    
-    // TODO: Remplacez cette simulation par l'appel réel au smart contract
-    // const accounts = await web3.eth.getAccounts();
-    // await cvnuContract.methods.recevoirFonds().send({ from: accounts[0], value: web3.utils.toWei(amount.toString(), 'ether') });
-
-    // Simulation de l'appel pour la démonstration
-    console.log(`SIMULATION : Envoi de ${amount}€ au smart contract.`);
-    database.blockchain.transactions.push({
-        id: uuidv4(),
-        type: 'recevoirFonds',
-        amount: amount,
-        timestamp: new Date().toISOString()
-    });
-    // AJOUT: Mettre à jour le solde de la caisse directement ici
-    database.caisse_manifestation.solde += amount;
-    await writeDatabaseFile();
-
-    res.status(200).json({ message: `Fonds de ${amount}€ reçus avec succès sur le smart contract (simulé).` });
-});
-
-app.post('/api/blockchain/decaisser-allocations', async (req, res) => {
-    // Cette route serait protégée et accessible uniquement par le propriétaire du contrat
-    
-    // TODO: Remplacez cette simulation par l'appel réel au smart contract
-    // const ownerAccount = '0x...'; // L'adresse du propriétaire du contrat
-    // await cvnuContract.methods.decaisserAllocations().send({ from: ownerAccount });
-    
-    // Simulation de l'appel pour la démonstration
-    console.log("SIMULATION : Décaissement des allocations lancé sur le smart contract.");
-    res.status(200).json({ message: 'Décaissement des allocations en cours...' });
-});
-
-// NOUVELLE ROUTE: Inscription des citoyens et création du CV numérique
+// Endpoint pour enregistrer un nouveau bénéficiaire
 app.post('/api/beneficiaries/register', async (req, res) => {
     const { name, email, cv_score } = req.body; // cv_score simule la valeur du CV
     if (!name || !email || cv_score === undefined) {
@@ -779,13 +480,15 @@ app.post('/api/beneficiaries/register', async (req, res) => {
 
 // --- Démarrage du serveur ---
 initializeDatabase().then(() => {
-    readRicsFile(); // Lecture du fichier rics.json séparément
+    //readRicsFile(); // Lecture du fichier rics.json séparément
     loadBoycottData();
     bot.launch();
     console.log('Bot Telegram démarré.');
 
     app.listen(port, () => {
-        console.log(`Serveur d'enquête parlementaire démarré sur http://localhost:${port}`);
-        console.log(`Documentation API Swagger UI disponible sur http://localhost:${port}/api-docs`);
+        console.log(`Serveur démarré sur http://localhost:${port}`);
     });
+}).catch(error => {
+    console.error("Échec de l'initialisation du serveur:", error);
+    process.exit(1);
 });

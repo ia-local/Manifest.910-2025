@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const Web3 = require('web3');
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // Nouvelle dépendance
 
 // --- Initialisation des API et des serveurs ---
 const app = express();
@@ -25,6 +26,8 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
+// Initialisation de l'API Google Gemini pour la génération d'images
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Initialisation des variables de rôles (avec valeurs par défaut pour la robustesse)
 let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
@@ -43,6 +46,25 @@ const ORGANIZER_GROUP_ID = "https://ia-local.github.io/Manifest.910-2025";
 app.get('/api/prefectures', (req, res) => {
     res.json(database.prefectures);
 });
+
+// Données de référence de la réforme
+const gouv_lawArticles = {
+    objectifs: [
+        "Améliorer la valorisation des compétences.",
+        "Favoriser la formation et la professionnalisation.",
+        "Encourager l'innovation et la création d'emplois qualifiés."
+    ],
+    modifications: {
+        L3121_1: "Définition du travail pour inclure la monétisation des compétences basée sur le CVNU.",
+        L4331_1: "Smart contracts pour la sécurisation et la transparence des transactions liées à la monétisation des compétences.",
+        L3222_1: "Redéfinition de la durée légale de travail et de sa monétisation.",
+        L4334_1: "Utilisation de la TVA pour financer la formation et l'emploi en fonction des compétences validées sur le CVNU.",
+        L4333_1: "Suivi régulier de la répartition des recettes de la TVA."
+    },
+    reference_cgi: {
+        article256: "Cet article du CGI définit le champ d'application de la TVA en France. La réforme propose de réaffecter une fraction de cette taxe existante pour financer les dispositifs de formation et d'emploi."
+    }
+};
 
 app.get('/api/telegram-sites', (req, res) => {
     res.json(database.telegram_sites); // Utilise le nouveau nom dans la DB
@@ -68,6 +90,8 @@ let writeQueue = Promise.resolve();
 let isWriting = false;
 
 app.get('/api/manifestation-sites', (req, res) => res.json(database.manifestation_sites));
+
+
 
 async function writeDatabaseFile() {
     writeQueue = writeQueue.then(async () => {
@@ -319,6 +343,7 @@ bot.action('show_help', async (ctx) => {
 /inviter - Inviter des amis à rejoindre le bot et le mouvement
 /contact [votre message] - Envoyer un message aux organisateurs
 /stats - Afficher les statistiques d'utilisation du bot
+/imagine [description] - Créer une image à partir d'une description textuelle
 /aboutai - En savoir plus sur mon fonctionnement
 /help - Afficher ce message d'aide
 `;
@@ -326,7 +351,7 @@ bot.action('show_help', async (ctx) => {
 });
 
 
-bot.help((ctx) => ctx.reply('Commandes disponibles: /start, /aide, /manifeste, /ric, /destitution, /create_poll, /stats'));
+bot.help((ctx) => ctx.reply('Commandes disponibles: /start, /aide, /manifeste, /ric, /destitution, /create_poll, /stats, /imagine'));
 
 // Commande /stats : affiche des statistiques d'utilisation du bot
 bot.command('stats', async (ctx) => {
@@ -346,7 +371,7 @@ bot.command('manifeste', (ctx) => {
 async function getDestitutionInfoMarkdown() {
     return `**La Procédure de Destitution : L'Article 68 de la Constitution**
 \nL'Article 68 de la Constitution française prévoit la possibilité de destituer le Président de la République en cas de manquement à ses devoirs manifestement incompatible avec l'exercice de son mandat.
-
+\n https://petitions.assemblee-nationale.fr/initiatives/i-2743
 \n\nNotre mouvement demande une application rigoureuse et transparente de cet article, et la mise en place de mécanismes citoyens pour initier et suivre cette procédure.
 \nPour le moment, nous recueillons les avis et les soutiens via des sondages et des discussions au sein du bot.
 `;
@@ -374,6 +399,54 @@ Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décli
 // Nouvelle commande : /ric
 bot.command('ric', async (ctx) => {
     await ctx.replyWithMarkdown(await getRicInfoMarkdown());
+});
+
+// COMMANDE CORRIGÉE ET SIMPLIFIÉE : /imagine [description]
+bot.command('imagine', async (ctx) => {
+    const topic = ctx.message.text.split(' ').slice(1).join(' ');
+    if (!topic) {
+        await ctx.reply('Veuillez fournir une description pour l\'image. Exemple: /imagine un dragon survolant une ville futuriste');
+        return;
+    }
+
+    try {
+        await ctx.replyWithChatAction('upload_photo');
+        await ctx.reply('⏳ Génération de l\'image en cours... Cela peut prendre un moment.');
+
+        // 1. Utilise Groq pour générer une description de l'image
+        const imageDescription = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: 'user',
+                    content: `Décris une image qui illustre le thème suivant : ${topic}. La description doit être suffisamment détaillée pour générer une image pertinente.`,
+                },
+            ],
+            model: 'gemma2-9b-it',
+        }).then(res => res.choices[0].message.content);
+
+        // 2. Utilise Gemini pour générer l'image à partir de la description
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image-preview' });
+        const result = await model.generateContent(imageDescription);
+        const response = await result.response;
+        
+        // La méthode generateContent renvoie directement le contenu pour ce modèle.
+        const parts = response.candidates[0].content.parts;
+        
+        // Recherche la partie qui contient l'image
+        for (const part of parts) {
+            if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+                const imageData = part.inlineData.data;
+                const imageBuffer = Buffer.from(imageData, 'base64');
+                await ctx.replyWithPhoto({ source: imageBuffer });
+                return;
+            }
+        }
+        
+        await ctx.reply('Désolé, l\'IA a généré une réponse sans image. Veuillez réessayer avec une autre description.');
+    } catch (error) {
+        console.error('Erreur lors de la génération de l\'image (Telegram):', error);
+        await ctx.reply('Désolé, une erreur est survenue lors de la génération de l\'image. Le modèle a pu échouer ou la description était trop complexe.');
+    }
 });
 
 
