@@ -480,10 +480,12 @@
     "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
     "source": null
   },
+    { "city": "Dublin", "country": "Irlande", "name": "Ambassade de France", "lat": 53.338706, "lon": -6.249520, "count": "À recenser", "video_link": null},
     { "city": "Madrid", "country": "Espagne", "lat": 40.416775, "lon": -3.703790, "count": "Milliers", "source": "Divers médias espagnols" },
     { "city": "Bruxelles", "country": "Belgique", "lat": 50.850346, "lon": 4.351721, "count": "Données à vérifier", "source": "Non confirmée pour cette date" },
     { "city": "Berlin", "country": "Allemagne", "lat": 52.520008, "lon": 13.404954, "count": "Données à vérifier", "source": "Non confirmée pour cette date" }
-],"strategic_locations": [
+],
+"strategic_locations": [
     { "name": "Hôpital Lariboisière", "city": "Paris", "type": "Hôpital", "lat": 48.882, "lon": 2.355 },
     { "name": "Université de la Sorbonne", "city": "Paris", "type": "Université", "lat": 48.846, "lon": 2.345 },
     { "name": "CHU de Rennes", "city": "Rennes", "type": "Hôpital", "lat": 48.114, "lon": -1.691 },
