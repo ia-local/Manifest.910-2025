@@ -1,322 +1,242 @@
-// Fichier : public/src/js/map.js
-// Ce fichier gère l'initialisation et l'affichage de la carte Leaflet.
+// Fichier : public/src/js/app.js
+// Ce fichier gère la navigation et l'initialisation des différentes pages de l'application.
 
-let map;
-let markerLayers = {};
-let mapInitialized = false;
-
-// Définition des icônes personnalisées
-const manifestationIcon = L.icon({
-    iconUrl: 'src/img/manifestation-icon.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
+// --- Lancement de l'application ---
+document.addEventListener('DOMContentLoaded', () => {
+    loadAsideMenu();
+    loadPage('home');
 });
 
-const prefectureIcon = L.icon({
-    iconUrl: 'src/img/pref.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-});
-
-const telegramIcon = L.icon({
-    iconUrl: 'src/img/telegram.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-});
-
-// Nouvelles icônes pour les lieux stratégiques
-const universityIcon = L.icon({
-    iconUrl: 'src/img/university.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-});
-
-const hospitalIcon = L.icon({
-    iconUrl: 'src/img/hospital.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32]
-});
-
-// Objet pour mapper les noms d'entités à leurs icônes
-const entityIcons = {
-    'Leclerc': L.icon({
-        iconUrl: 'src/img/Leclerc.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Carrefour': L.icon({
-        iconUrl: 'src/img/Carrefour.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Intermarché': L.icon({
-        iconUrl: 'src/img/Intermarche.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Super U': L.icon({
-        iconUrl: 'src/img/U.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Auchan': L.icon({
-        iconUrl: 'src/img/Auchan.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Lidl': L.icon({
-        iconUrl: 'src/img/Lidl.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Aldi': L.icon({
-        iconUrl: 'src/img/Aldi.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Monoprix': L.icon({
-        iconUrl: 'src/img/Monoprix.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Proxy/Cocci-MARKET': L.icon({
-        iconUrl: 'src/img/Proxy_Cocci-MARKET.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Total': L.icon({
-        iconUrl: 'src/img/total.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'HSBC': L.icon({
-        iconUrl: 'src/img/HSBC.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Société Générale': L.icon({
-        iconUrl: 'src/img/SocieteGenerale.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Crédit Coopératif': L.icon({
-        iconUrl: 'src/img/CreditCooperatif.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Crédit Agricole': L.icon({
-        iconUrl: 'src/img/CreditAgricole.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'La Poste': L.icon({
-        iconUrl: 'src/img/LaPoste.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Crédit Lyonnais': L.icon({
-        iconUrl: 'src/img/CreditLyonnais.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'Crédit Mutuel': L.icon({
-        iconUrl: 'src/img/CreditMutuel.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'CIC': L.icon({
-        iconUrl: 'src/img/CIC.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'EUROPAFI': L.icon({
-        iconUrl: 'src/img/EUROPAFI.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    }),
-    'McDonald\'s': L.icon({
-        iconUrl: 'src/img/McDonalds.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    })
-};
+// --- Fonctions de navigation ---
 
 /**
- * Récupère l'icône appropriée en fonction du nom de l'entité.
- * @param {string} entityName - Nom de l'entité.
- * @returns {L.Icon} L'objet icône.
+ * Charge le menu latéral de l'application.
  */
-function getIconForEntity(entityName) {
-    if (entityIcons[entityName]) {
-        return entityIcons[entityName];
+function loadAsideMenu() {
+    const mainNavigation = document.getElementById('main-navigation');
+    if (mainNavigation) {
+        mainNavigation.innerHTML = `
+            <div class="logo">
+                <h3>Plateforme Citoyenne</h3>
+            </div>
+            <ul>
+                <li><a href="#" onclick="loadPage('home')" data-page="home">Accueil</a></li>
+                <li><a href="#" onclick="loadPage('dashboard')" data-page="dashboard">Tableau de bord</a></li>
+                <li><a href="#" onclick="loadPage('ric')" data-page="ric">RIC</a></li>
+                <li><a href="#" onclick="loadPage('boycottage')" data-page="boycottage">Boycottage</a></li>
+                <li><a href="#" onclick="loadPage('organisation')" data-page="organisation">Organisation</a></li>
+                <li><a href="#" onclick="loadPage('contacts')" data-page="contacts">Contacts</a></li>
+                <li><a href="#" onclick="loadPage('affaires')" data-page="affaires">Affaires</a></li>
+            </ul>
+        `;
     }
-    return manifestationIcon;
 }
 
 /**
- * Initialise la carte Leaflet et ajoute les marqueurs.
- * @param {Array} dataBoycotts - Données des entreprises à boycotter.
- * @param {Array} dataPrefectures - Données des préfectures.
- * @param {Array} dataTelegramGroups - Données des groupes Telegram.
- * @param {Array} dataManifestationPoints - Données des points de manifestation.
- * @param {Array} dataStrategicLocations - Données des lieux stratégiques (universités, hôpitaux).
+ * Charge une page HTML de manière dynamique dans le contenu principal.
+ * @param {string} pageName - Le nom de la page à charger (ex: 'home', 'boycottage').
  */
-function initMap(dataBoycotts, dataPrefectures, dataTelegramGroups, dataManifestationPoints, dataStrategicLocations) {
-    if (mapInitialized) return;
+function loadPage(pageName) {
+    const mainContent = document.getElementById('main-content');
+    const asideLinks = document.querySelectorAll('.main-aside a');
 
-    map = L.map('map').setView([46.603354, 1.888334], 6);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    mapInitialized = true;
-
-    const legendList = document.getElementById('legend-list');
-    if (!legendList) {
-        console.error('Erreur: L\'élément de légende est manquant.');
-        return;
-    }
-
-    legendList.innerHTML = '';
-
-    // Création des couches de marqueurs pour chaque entité
-    const uniqueBoycottNames = [...new Set(dataBoycotts.map(item => item.name))];
-    uniqueBoycottNames.forEach(name => {
-        markerLayers[name] = L.layerGroup();
-        const entities = dataBoycotts.filter(item => item.name === name);
-        entities.forEach(entity => {
-            if (entity.locations) {
-                entity.locations.forEach(location => {
-                    const icon = getIconForEntity(entity.name);
-                    L.marker([location.lat, location.lon], { icon: icon })
-                        .bindPopup(`<b>${entity.name}</b><br>Type: ${entity.type}<br>Description: ${entity.description}<br>Ville: ${location.city}`)
-                        .addTo(markerLayers[name]);
-                });
-            }
-        });
-
-        // Création de l'élément de légende pour chaque entité de boycott
-        const li = document.createElement('li');
-        li.setAttribute('data-id', name);
-        li.innerHTML = `<span class="legend-icon" style="background-image: url('${getIconForEntity(name).options.iconUrl}')"></span>${name}`;
-        legendList.appendChild(li);
-    });
-
-    // Création de la couche pour les préfectures
-    markerLayers['Prefecture'] = L.layerGroup();
-    dataPrefectures.forEach(prefecture => {
-        L.marker([prefecture.lat, prefecture.lon], { icon: prefectureIcon })
-            .bindPopup(`<b>${prefecture.city}</b><br>Département : ${prefecture.department}`)
-            .addTo(markerLayers['Prefecture']);
-    });
-
-    // Création de l'élément de légende pour les préfectures
-    const liPrefecture = document.createElement('li');
-    liPrefecture.setAttribute('data-id', 'Prefecture');
-    liPrefecture.innerHTML = `<span class="legend-icon" style="background-image: url('${prefectureIcon.options.iconUrl}')"></span>Préfectures`;
-    legendList.appendChild(liPrefecture);
-
-
-    // Création de la couche pour les groupes Telegram
-    markerLayers['Telegram'] = L.layerGroup();
-    dataTelegramGroups.forEach(site => {
-        L.marker([site.lat, site.lon], { icon: telegramIcon })
-            .bindPopup(`<b>${site.name}</b><br>Département/Région : ${site.department}<br>Ville : ${site.city}<br><a href="${site.link}" target="_blank">Rejoindre</a>`)
-            .addTo(markerLayers['Telegram']);
-    });
-
-    // Création de l'élément de légende pour les groupes Telegram
-    const liTelegram = document.createElement('li');
-    liTelegram.setAttribute('data-id', 'Telegram');
-    liTelegram.innerHTML = `<span class="legend-icon" style="background-image: url('${telegramIcon.options.iconUrl}')"></span>Groupes Telegram`;
-    legendList.appendChild(liTelegram);
-
-    // Ajout des points de manifestation
-// Ajout des points de manifestation
-if (dataManifestationPoints && dataManifestationPoints.length > 0) {
-    markerLayers['Manifestation Points'] = L.layerGroup();
-    dataManifestationPoints.forEach(point => {
-        let popupContent = `<b>Manifestation</b><br>Ville: ${point.city}<br>Estimation: ${point.count} personnes`;
-        if (point.video_link) {
-            popupContent += `<br><a href="${point.video_link}" target="_blank">Voir la vidéo</a>`;
+    asideLinks.forEach(link => {
+        if (link.dataset.page === pageName) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
         }
-        L.marker([point.lat, point.lon], { icon: manifestationIcon })
-            .bindPopup(popupContent)
-            .addTo(markerLayers['Manifestation Points']);
     });
 
-    const liManifestation = document.createElement('li');
-    liManifestation.setAttribute('data-id', 'Manifestation Points');
-    liManifestation.innerHTML = `<span class="legend-icon" style="background-image: url('${manifestationIcon.options.iconUrl}')"></span>Points de Manifestation`;
-    legendList.appendChild(liManifestation);
-}
-    
-    // Ajout des lieux stratégiques (universités et hôpitaux)
-    if (dataStrategicLocations && dataStrategicLocations.length > 0) {
-        markerLayers['Lieux Stratégiques'] = L.layerGroup();
-        dataStrategicLocations.forEach(location => {
-            let iconToUse = null;
-            if (location.type === 'Université') {
-                iconToUse = universityIcon;
-            } else if (location.type === 'Hôpital') {
-                iconToUse = hospitalIcon;
+    fetch(`src/pages/${pageName}.html`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur de chargement de la page ${pageName}: ${response.statusText}`);
             }
-
-            if (iconToUse) {
-                L.marker([location.lat, location.lon], { icon: iconToUse })
-                    .bindPopup(`<b>${location.name}</b><br>Type: ${location.type}<br>Ville: ${location.city}`)
-                    .addTo(markerLayers['Lieux Stratégiques']);
+            return response.text();
+        })
+        .then(html => {
+            mainContent.innerHTML = html;
+            switch (pageName) {
+                case 'dashboard':
+                    initDashboard();
+                    break;
+                case 'ric':
+                    initRicPage();
+                    break;
+                case 'boycottage':
+                    initBoycottagePage();
+                    break;
+                default:
+                    console.log(`Page ${pageName} chargée, pas de fonction d'initialisation.`);
+                    break;
             }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement de la page:', error);
+            mainContent.innerHTML = `<div class="error-message"><h2>Erreur</h2><p>${error.message}</p></div>`;
         });
+}
 
-        const liStrategic = document.createElement('li');
-        liStrategic.setAttribute('data-id', 'Lieux Stratégiques');
-        liStrategic.innerHTML = `<span class="legend-icon" style="background-image: url('${universityIcon.options.iconUrl}')"></span>Universités/Hôpitaux`;
-        legendList.appendChild(liStrategic);
+// --- Fonctions d'initialisation des pages ---
+
+/**
+ * Initialise la page du tableau de bord et affiche les listes d'entités.
+ */
+function initDashboard() {
+    console.log("Initialisation du tableau de bord...");
+
+    const targetDate = new Date('2025-09-10T00:00:00');
+    const countdownElement = document.getElementById('countdown');
+    if (countdownElement) {
+        setInterval(() => {
+            const now = new Date();
+            const diff = targetDate - now;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            countdownElement.textContent = `J-${days} avant le 10 septembre`;
+        }, 1000);
     }
 
-    // Écouteurs d'événements pour basculer les couches
-    document.querySelectorAll('#legend-list li').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const entityId = item.getAttribute('data-id');
-            const layer = markerLayers[entityId];
-            if (layer) {
-                if (map.hasLayer(layer)) {
-                    map.removeLayer(layer);
-                    item.classList.remove('selected');
-                } else {
-                    map.addLayer(layer);
-                    item.classList.add('selected');
-                }
+    fetch('/api/dashboard/summary')
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur de chargement des données du tableau de bord.');
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('caisse-solde').textContent = `Solde : ${data.caisseSolde} €`;
+            document.getElementById('boycott-count').textContent = `${data.boycottCount} enseignes listées`;
+            document.getElementById('ric-count').textContent = `${data.ricCount} propositions actives`;
+        })
+        .catch(error => console.error('Erreur:', error));
+
+    // Appel de la nouvelle fonction pour afficher les listes d'entités
+    displayEntityLists();
+}
+
+/**
+ * Affiche les listes des préfectures et des groupes Telegram.
+ */
+async function displayEntityLists() {
+    try {
+        const response = await fetch('/database.json');
+        if (!response.ok) {
+            throw new Error(`Erreur de chargement de la base de données : ${response.statusText}`);
+        }
+        const data = await response.json();
+
+        const prefecturesList = document.getElementById('prefectures-list');
+        const telegramList = document.getElementById('telegram-list');
+
+        if (prefecturesList) {
+            prefecturesList.innerHTML = data.prefectures.map(p => `<li>${p.city} (${p.department})</li>`).join('');
+        }
+
+        if (telegramList) {
+            telegramList.innerHTML = data.telegram_groups.map(g => `<li><a href="${g.link}" target="_blank">${g.name} - ${g.city}</a></li>`).join('');
+        }
+
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage des listes d\'entités:', error);
+    }
+}
+
+
+/**
+ * Initialise la page du Référendum d'Initiative Citoyenne (RIC).
+ */
+function initRicPage() {
+    console.log("Initialisation de la page RIC...");
+    fetch('/api/rics')
+        .then(response => response.json())
+        .then(rics => {
+            const ricList = document.getElementById('ric-list');
+            if (ricList) {
+                ricList.innerHTML = rics.map(ric => `
+                    <div class="card ric-card">
+                        <h3>${ric.title}</h3>
+                        <p>${ric.description}</p>
+                        <p>Statut : ${ric.status} | Signatures : ${ric.signatures}</p>
+                    </div>
+                `).join('');
             }
-        });
-    });
+        })
+        .catch(error => console.error('Erreur de chargement des RIC:', error));
+}
+
+
+async function fetchAllData() {
+    try {
+        const databaseResponse = await fetch('/database.json');
+        if (!databaseResponse.ok) {
+            throw new Error(`Erreur de chargement de la base de données : ${databaseResponse.statusText}`);
+        }
+        const data = await databaseResponse.json();
+
+        // Récupérer les données directement des nouvelles clés
+        return {
+            boycotts: data.boycotts || [],
+            prefectures: data.prefectures || [],
+            telegramGroups: data.telegram_groups || [],
+            manifestationPoints: data.manifestation_points || [],
+            strategicLocations: data.strategic_locations || [],
+            roundaboutPoints: data.roundabout_points || [],
+            portePoints: data.porte_points || [],
+            elyseePoint: data.elysee_point
+        };
+    } catch (error) {
+        console.error('Erreur lors de la récupération des données:', error);
+        return { boycotts: [], prefectures: [], telegramGroups: [], manifestationPoints: [], strategicLocations: [], roundaboutPoints: [], portePoints: [], elyseePoint: null };
+    }
+}
+
+
+/**
+ * Initialise la page de Boycottage en chargeant les données nécessaires pour la carte.
+ */
+async function initBoycottagePage() {
+    console.log("Initialisation de la page Boycottage...");
+
+    try {
+        const data = await fetchAllData();
+        
+        const mapContainer = document.getElementById('map');
+        if (mapContainer && typeof initMap === 'function') {
+            initMap(data.boycotts, data.prefectures, data.telegramGroups, data.manifestationPoints, data.strategicLocations, data.roundaboutPoints, data.portePoints, data.elyseePoint);
+        } else {
+            console.error('Erreur: Le conteneur de carte ou la fonction initMap est manquant.');
+        }
+
+        const form = document.getElementById('new-boycott-form');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const newData = Object.fromEntries(formData.entries());
+
+                const newEntity = {
+                    name: newData.name,
+                    type: newData.type,
+                    description: newData.description,
+                    locations: [
+                        { lat: parseFloat(newData.lat), lon: parseFloat(newData.lon) }
+                    ]
+                };
+
+                const response = await fetch('/api/boycotts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newEntity)
+                });
+
+                if (response.ok) {
+                    alert('Enseigne ajoutée avec succès !');
+                    loadPage('boycottage');
+                } else {
+                    alert('Erreur lors de l ajout de lenseigne.');
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+    }
 }

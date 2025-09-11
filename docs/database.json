@@ -3,6 +3,35 @@
   "affaires": {
     "chronology": []
   },
+  "petitions": [
+      {
+        "id": "i-2743",
+        "title": "Destitution du Président de la République",
+        "url": "https://petitions.assemblee-nationale.fr/initiatives/i-2743",
+        "description": "Demande de destitution en vertu de l'article 68 de la Constitution, pour violation des principes démocratiques.",
+        "author": "Thibaud MAGNIEZ",
+        "date": "28/04/2025"
+      },
+      {
+        "id": "i-3014",
+        "title": "Abrogation de la loi Duplomb",
+        "url": "https://petitions.assemblee-nationale.fr/initiatives/i-3014",
+        "description": "Non à la Loi Duplomb — Pour la santé, la sécurité, l’intelligence collective.",
+        "author": "Eleonore PATTERY",
+        "date": "12/02/2025"
+      }
+    ],
+      "media_sources": [
+      {
+        "platform": "YouTube",
+        "channel": "Canard Réfractaire",
+        "title": "Le 10 SEPTEMBRE, C'ÉTAIT ÇA ! 💥 (Les actions partout en France !)",
+        "url": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+        "views": 37623,
+        "likes": 7906,
+        "date_published": "2025-09-10"
+      }
+    ],
   "rics": [],
   "taxes": [
     {
@@ -261,22 +290,225 @@
   "blockchain": {
     "transactions": []
   },
+  "beneficiaries": [],
+  "cv_contracts": [],
   "polls": [],
   "organizers": [],
-"manifestation_points": [
-    { "city": "Caen", "lat": 49.183333, "lon": -0.350000, "count": 6000, "video_link": null },
-    { "city": "Rennes", "lat": 48.11197912, "lon": -1.68186449, "count": 15000, "video_link": null },
-    { "city": "Grenoble", "lat": 45.185, "lon": 5.725, "count": 30000, "video_link": "https://www.youtube.com/watch?v=ZvUkt9Y2uKk"},
-    { "city": "Paris", "lat": 48.8566, "lon": 2.3522, "count": "Plusieurs milliers", "video_link": "https://www.youtube.com/watch?v=ZvUkt9Y2uKk" },
-    { "city": "Saint-Malo", "lat": 48.6493, "lon": -2.0076, "count": 170, "video_link": "https://www.youtube.com/watch?v=example-video-st-malo" },
-    { "city": "Fougères", "lat": 48.3519, "lon": -1.205, "count": 380, "video_link": "https://www.youtube.com/watch?v=example-video-fougeres" }
-],
-    "strategic_locations": [
+  "manifestation_points": [
+    { "city": "Caen", "lat": 49.183333, "lon": -0.350000, "count": 6000, "video_link": null, "source": "Rapport local" },
+    { "city": "Rennes", "lat": 48.11197912, "lon": -1.68186449, "count": 15000, "video_link": null, "source": "Rapport local" },
+    { "city": "Grenoble", "lat": 45.185, "lon": 5.725, "count": 30000, "video_link": "https://www.youtube.com/watch?v=ZvUkt9Y2uKk", "source": "Divers" },
+    { "city": "Paris", "lat": 48.8679, "lon": 2.3582, "count": "Plusieurs milliers", "video_link": "https://www.youtube.com/watch?v=ZvUkt9Y2uKk", "strategic_location": "Place de la République", "note": "Référence numérique 910", "source": "Média" },
+    { "city": "Marseille", "lat": 43.2961, "lon": 5.3699, "count": "Plusieurs milliers", "video_link": "https://www.youtube.com/watch?v=XpdhTarPyac", "source": "Vidéo YouTube" },
+    { "city": "Saint-Malo", "lat": 48.6493, "lon": -2.0076, "count": 170, "video_link": null, "source": "Média local" },
+    { "city": "Fougères", "lat": 48.3519, "lon": -1.205, "count": 380, "video_link": null, "source": "Média local" },
+    { "city": "Valenciennes", "lat": 50.356, "lon": 3.523, "count": { "CGT": 1500, "Police": 700 }, "source": "Rapports syndicaux et policiers" },
+    { "city": "Nantes", "lat": 47.2186, "lon": -1.5541, "count": 200, "source": "Média local" },
+    {
+    "city": "Tours",
+    "lat": 47.3941,
+    "lon": 0.6848,
+    "count": "500",
+    "video_link": "https://www.youtube.com/watch?v=Otqa3o64fbw",
+    "source": "Vidéo YouTube"
+},
+  {
+    "city": "Amiens",
+    "lat": 49.896546,
+    "lon": 2.311214,
+    "count": "Police: 6500, Syndicats: 8000",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "France 3 Hauts-de-France"
+  },
+  {
+    "city": "Lille",
+    "lat": 50.6212,
+    "lon": 3.0448,
+    "count": 3000,
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "RCF Hauts-de-France"
+  },
+  {
+    "city": "Rouen",
+    "lat": 49.44,
+    "lon": 1.09,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Le Havre",
+    "lat": 49.4959,
+    "lon": 0.1311,
+    "count": 20000,
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "CGT"
+  },
+  {
+    "city": "Bordeaux",
+    "lat": 44.84151,
+    "lon": -0.56997,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Poitiers",
+    "lat": 46.58013,
+    "lon": 0.34423,
+    "count": 250,
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "Le7.info"
+  },
+  {
+    "city": "La Rochelle",
+    "lat": 46.166667,
+    "lon": -1.150000,
+    "count": "Plus de 1500",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "YouTube"
+  },
+  {
+    "city": "Foix",
+    "lat": 42.966667,
+    "lon": 1.600000,
+    "count": 8000,
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "Orange Actu"
+  },
+  {
+    "city": "La Fare-les-Oliviers",
+    "lat": 43.551666,
+    "lon": 5.194722,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Toulon",
+    "lat": 43.1368,
+    "lon": 5.9336,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Albertville",
+    "lat": 45.675535,
+    "lon": 6.392726,
+    "count": 1500,
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "YouTube"
+  },
+  {
+    "city": "Villeurbanne",
+    "lat": 45.7725,
+    "lon": 4.8966,
+    "count": "Environ 70",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "YouTube"
+  },
+  {
+    "city": "Annecy",
+    "lat": 45.8992348,
+    "lon": 6.1288847,
+    "count": "Plusieurs milliers",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "YouTube"
+  },
+  {
+    "city": "Créteil",
+    "lat": 48.790367,
+    "lon": 2.455572,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Strasbourg",
+    "lat": 48.58406,
+    "lon": 7.75871,
+    "count": "Police: 9500, Organisateurs: 30000",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "Europe1"
+  },
+  {
+    "city": "Reims",
+    "lat": 49.23,
+    "lon": 4.062,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Arbois",
+    "lat": 46.902851,
+    "lon": 5.772342,
+    "count": "Environ 60",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "Trente Neuf Degrés"
+  },
+  {
+    "city": "Béthune",
+    "lat": 50.531842,
+    "lon": 2.637715,
+    "count": 100,
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "Calais La Sociale"
+  },
+  {
+    "city": "Beauvais",
+    "lat": 49.4333,
+    "lon": 2.0833,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+  {
+    "city": "Tonneins",
+    "lat": 44.389722,
+    "lon": 0.308333,
+    "count": "Environ 3000",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": "Dailymotion"
+  },
+  {
+    "city": "Vienne",
+    "lat": 45.526167,
+    "lon": 4.875277,
+    "count": "À rechercher",
+    "video_link": "https://www.youtube.com/watch?v=5FZqRpcMRuk",
+    "source": null
+  },
+    { "city": "Madrid", "country": "Espagne", "lat": 40.416775, "lon": -3.703790, "count": "Milliers", "source": "Divers médias espagnols" },
+    { "city": "Bruxelles", "country": "Belgique", "lat": 50.850346, "lon": 4.351721, "count": "Données à vérifier", "source": "Non confirmée pour cette date" },
+    { "city": "Berlin", "country": "Allemagne", "lat": 52.520008, "lon": 13.404954, "count": "Données à vérifier", "source": "Non confirmée pour cette date" }
+],"strategic_locations": [
     { "name": "Hôpital Lariboisière", "city": "Paris", "type": "Hôpital", "lat": 48.882, "lon": 2.355 },
     { "name": "Université de la Sorbonne", "city": "Paris", "type": "Université", "lat": 48.846, "lon": 2.345 },
     { "name": "CHU de Rennes", "city": "Rennes", "type": "Hôpital", "lat": 48.114, "lon": -1.691 },
     { "name": "Université de Rennes 1", "city": "Rennes", "type": "Université", "lat": 48.116, "lon": -1.680 },
     { "name": "Hôpital Michallon", "city": "Grenoble", "type": "Hôpital", "lat": 45.189, "lon": 5.722 },
     { "name": "Université Grenoble Alpes", "city": "Grenoble", "type": "Université", "lat": 45.204, "lon": 5.768 }
-  ]
+],
+"roundabout_points": [
+    { "name": "Rond-point de la Patte d'Oie", "city": "Amiens", "lat": 49.885, "lon": 2.298, "count": "À rechercher", "type": "Rond-point de Blocage" },
+    { "name": "Rond-point des Quatre-Vents", "city": "Créteil", "lat": 48.784, "lon": 2.459, "count": "À rechercher", "type": "Rond-point de Blocage" },
+    { "name": "Rond-point du Val d'Auron", "city": "Bourges", "lat": 47.069, "lon": 2.408, "count": "À rechercher", "type": "Rond-point de Blocage" }
+],
+"porte_points": [
+    { "name": "Porte de Bagnolet", "city": "Paris", "lat": 48.8631, "lon": 2.4045, "count": "À rechercher", "type": "Porte de Paris" },
+    { "name": "Porte d'Aubervilliers", "city": "Paris", "lat": 48.8988, "lon": 2.3739, "count": "À rechercher", "type": "Porte de Paris" },
+    { "name": "Porte de Clignancourt", "city": "Paris", "lat": 48.8985, "lon": 2.3481, "count": "À rechercher", "type": "Porte de Paris" },
+    { "name": "Porte de Montreuil", "city": "Paris", "lat": 48.8559, "lon": 2.4172, "count": "À rechercher", "type": "Porte de Paris" },
+    { "name": "Porte de Vincennes", "city": "Paris", "lat": 48.8475, "lon": 2.4191, "count": "À rechercher", "type": "Porte de Paris" }
+],
+"elysee_point": {
+    "name": "Palais de l'Élysée",
+    "city": "Paris",
+    "type": "Palais de l'Élysée",
+    "lat": 48.8703,
+    "lon": 2.3168,
+    "source": "boutique.elysee.fr"
+}
 }
