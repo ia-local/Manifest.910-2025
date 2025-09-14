@@ -1,18 +1,25 @@
-// Fichier : serveur.js
-// --- Dépendances et initialisation ---
-require('dotenv').config();
+// server.js
+const fs = require("fs/promises");
 const express = require('express');
 const path = require('path');
-const fs = require('fs/promises');
 const Groq = require('groq-sdk');
 const { Telegraf, Markup } = require('telegraf');
 const { v4: uuidv4 } = require('uuid');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const Web3 = require('web3');
-const { GoogleGenerativeAI } = require('@google/generative-ai'); // Nouvelle dépendance
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
+const ee = require('@google/earthengine');
+// const { parse } = require('node-html-parser');
 
-// --- Initialisation des API et des serveurs ---
+// Clés API
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const EE_PRIVATE_KEY_PATH = './private-key.json';
+let EE_PRIVATE_KEY = {};
+
+// Initialisation unique des dépendances
+const groq = new Groq({ apiKey: GROQ_API_KEY });
 const app = express();
 const port = process.env.PORT || 3000;
 const bot = new Telegraf('7219104241:AAG2biLtqAucVucjHp1bSrjxnoxXWdNU2K0', {
@@ -22,24 +29,19 @@ const bot = new Telegraf('7219104241:AAG2biLtqAucVucjHp1bSrjxnoxXWdNU2K0', {
 });
 let chatLog = {};
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
-
-// Initialisation de l'API Google Gemini pour la génération d'images
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Initialisation des variables de rôles (avec valeurs par défaut pour la robustesse)
 let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
 let rolesAssistant = { assistant: { content: "Je suis un assistant IA utile et informatif." } };
 let rolesUser = { user: { content: "Je suis un utilisateur." } };
 
 // --- Configuration du serveur Express ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'docs')));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/roles', express.static(path.join(__dirname, 'docs', 'roles')));
 
 const STATS_FILE = path.join(__dirname, 'data', 'stats.json');
+const SATELLITES_DATA_FILE = path.join(__dirname, 'data', 'satellites.json');
 
 const ORGANIZER_GROUP_ID = "https://ia-local.github.io/Manifest.910-2025"; 
 
@@ -47,7 +49,6 @@ app.get('/api/prefectures', (req, res) => {
     res.json(database.prefectures);
 });
 
-// Données de référence de la réforme
 const gouv_lawArticles = {
     objectifs: [
         "Améliorer la valorisation des compétences.",
@@ -67,9 +68,8 @@ const gouv_lawArticles = {
 };
 
 app.get('/api/telegram-sites', (req, res) => {
-    res.json(database.telegram_sites); // Utilise le nouveau nom dans la DB
+    res.json(database.telegram_groups);
 });
-
 
 const swaggerDocumentPath = path.join(__dirname, 'api-docs', 'swagger.yaml');
 let swaggerDocument = {};
@@ -80,18 +80,16 @@ try {
     console.error('Erreur lors du chargement de la documentation Swagger:', error);
 }
 
-// --- Gestion de la base de données locale (database.json) ---
 const DATABASE_FILE_PATH = path.join(__dirname, 'database.json');
 const BOYCOTT_FILE_PATH = path.join(__dirname, 'boycott.json');
 let database = {};
 let boycottsData = {};
+let satellitesData = [];
 
 let writeQueue = Promise.resolve();
 let isWriting = false;
 
-app.get('/api/manifestation-sites', (req, res) => res.json(database.manifestation_sites));
-
-
+app.get('/api/manifestation-sites', (req, res) => res.json(database.manifestation_points));
 
 async function writeDatabaseFile() {
     writeQueue = writeQueue.then(async () => {
@@ -129,8 +127,10 @@ async function initializeDatabase() {
                 blockchain: { transactions: [] },
                 polls: [],
                 organizers: [],
-                beneficiaries: [], // AJOUT: Tableau pour les bénéficiaires
-                cv_contracts: [] // AJOUT: Représentation des smart contracts CV
+                beneficiaries: [],
+                cv_contracts: [],
+                cameras_points: [], 
+                blog_posts: [] 
             };
             await writeDatabaseFile();
         } else {
@@ -140,7 +140,6 @@ async function initializeDatabase() {
     }
 }
 
-// Fonction utilitaire pour lire un fichier JSON et créer un fichier par défaut s'il n'existe pas
 async function readJsonFile(filePath, defaultValue = {}) {
     try {
         await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -157,7 +156,6 @@ async function readJsonFile(filePath, defaultValue = {}) {
     }
 }
 
-// Fonction utilitaire pour écrire un fichier JSON
 async function writeJsonFile(filePath, data) {
     try {
         await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -177,9 +175,77 @@ async function loadBoycottData() {
     }
 }
 
-// --- Fonctions d'interaction avec l'IA (Groq) ---
+async function loadSatellitesData() {
+    try {
+        satellitesData = await readJsonFile(SATELLITES_DATA_FILE, []);
+        console.log('Données satellitaires chargées avec succès.');
+    } catch (error) {
+        console.error('Erreur lors du chargement de satellites.json:', error);
+        satellitesData = [];
+    }
+}
 
-// Fonction utilitaire pour envoyer des messages IA avec Groq
+// Nouvelle route d'API pour les données de caméras publiques
+app.get('/api/public-cameras', async (req, res) => {
+    const cameraPoints = database.cameras_points || [];
+    res.json(cameraPoints);
+});
+
+// ROUTE GENERALE POUR LA GESTION DU BLOG
+app.get('/api/blog/generate', async (req, res) => {
+    const topic = req.query.topic;
+    if (!topic) {
+        return res.status(400).json({ error: 'Le paramètre "topic" est manquant.' });
+    }
+
+    try {
+        const [titleResponse, contentResponse, imageResponse] = await Promise.all([
+            groq.chat.completions.create({
+                messages: [{ role: 'user', content: `Génère un titre de blog sur le thème : ${topic}. Fais moins de 10 mots.` }],
+                model: 'gemma2-9b-it',
+            }),
+            groq.chat.completions.create({
+                messages: [{ role: 'user', content: `Rédige un article de blog sur le thème ${topic}. Formaté en HTML.` }],
+                model: 'gemma2-9b-it',
+            }),
+            // Simule la génération d'image pour éviter les problèmes de dépendance
+            Promise.resolve({ choices: [{ message: { content: 'https://ia-local.github.io/Manifest.910-2025/media/generated-image.jpg' } }] })
+        ]);
+
+        const title = titleResponse.choices[0].message.content;
+        const content = contentResponse.choices[0].message.content;
+        const imageUrl = imageResponse.choices[0].message.content;
+        
+        // Simule la sauvegarde de l'article pour le moment
+        const newPost = {
+            id: uuidv4(),
+            title: title,
+            media: imageUrl,
+            article: content,
+            date: new Date().toISOString()
+        };
+
+        // Sauvegarder dans la base de données (si un tableau blog_posts existe)
+        if (database.blog_posts) {
+            database.blog_posts.push(newPost);
+            await writeDatabaseFile();
+        }
+
+        res.json(newPost);
+
+    } catch (error) {
+        console.error('Erreur lors de la génération du contenu du blog:', error);
+        res.status(500).json({ error: 'Échec de la génération de l\'article.' });
+    }
+});
+
+
+app.get('/api/blog/posts', async (req, res) => {
+    // Si la base de données ne contient pas de blog_posts, renvoie un tableau vide
+    res.json(database.blog_posts || []);
+});
+
+
 async function getGroqChatResponse(promptInput, model, systemMessageContent) {
     try {
         const messages = [];
@@ -200,6 +266,7 @@ async function getGroqChatResponse(promptInput, model, systemMessageContent) {
         return 'Une erreur est survenue lors du traitement de votre demande. Veuillez réessayer plus tard.';
     }
 }
+
 async function getLlmResponse(userMessage, role, conversationHistory) {
     const systemPrompt = `Tu es un assistant IA spécialisé dans l'analyse de dossiers de corruption, de blanchiment d'argent, d'évasion fiscale et de prise illégale d'intérêts. Tu as accès à une base de données de l'enquête parlementaire française. L'enquête se concentre sur les actions de hauts fonctionnaires d'État entre 2017 et 2027. Tu peux prendre plusieurs rôles en fonction des requêtes de l'utilisateur. Ton ton doit être factuel, précis, et basé sur les données de l'enquête. Les rôles possibles sont : Enquêteur, Journaliste, Avocat et Juge. Le rôle actuel est: ${role}.`;
 
@@ -228,7 +295,6 @@ async function getLlmResponse(userMessage, role, conversationHistory) {
     }
 }
 
-// Endpoint IA pour générer des données d'entité pour l'application web
 app.post('/api/ai/generate-entity', async (req, res) => {
     const { query } = req.body;
     if (!query) return res.status(400).json({ error: 'La requête est vide.' });
@@ -252,7 +318,6 @@ app.post('/api/ai/generate-entity', async (req, res) => {
     }
 });
 
-// NOUVELLE ROUTE: Endpoint pour la conversation IA du dashboard
 app.post('/api/ai/chat', async (req, res) => {
     const { message } = req.body;
     if (!message) {
@@ -271,8 +336,6 @@ app.post('/api/ai/chat', async (req, res) => {
     }
 });
 
-// --- Bot Telegram ---
-
 bot.start(async (ctx) => {
     const payload = ctx.startPayload;
     let welcomeMessage = `Bonjour citoyen(ne) ! 👋\n\nBienvenue dans l'espace de mobilisation pour la **Grève Générale du 10 Septembre 2025** et la **Justice Sociale** ! Je suis votre assistant pour le mouvement.`;
@@ -286,17 +349,15 @@ bot.start(async (ctx) => {
     const inlineKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback('📜 Le Manifeste', 'show_manifest')],
         [Markup.button.callback('🗳️ S\'engager (RIC/Pétitions)', 'engage_menu')],
-        // Le bouton pour l'application web est supprimé
         [Markup.button.callback('❓ Aide & Commandes', 'show_help')]
     ]);
 
     await ctx.replyWithMarkdown(welcomeMessage, inlineKeyboard);
 });
 
-// Action pour retourner au menu principal (pour le bouton "Retour")
 bot.action('start_menu', async (ctx) => {
     await ctx.answerCbQuery();
-    await bot.start(ctx); // Simule la commande /start pour réafficher le menu principal
+    await bot.start(ctx);
 });
 
 bot.action('show_manifest', async (ctx) => {
@@ -316,13 +377,12 @@ Notre mouvement est né de la conviction que la République doit retrouver ses v
 
 bot.action('engage_menu', async (ctx) => {
     await ctx.answerCbQuery();
-    const engageMessage = `Choisissez comment vous souhaitez vous engager :\n\n` +
+    const engageMessage = `Choisissez how you would like to engage :\n\n` +
                           `✅ **Signer la Pétition RIC :** Le Référendum d'Initiative Citoyenne est au cœur de nos demandes. Participez à nos sondages réguliers sur le sujet, ou lancez la commande /ric pour en savoir plus.\n\n` +
                           `⚖️ **Soutenir la Procédure de Destitution :** Nous visons la responsabilisation des élus. Utilisez la commande /destitution pour comprendre l'Article 68 et nos actions.\n\n` +
                           `💬 **Jugement Majoritaire & Justice Sociale :** Explorez nos propositions pour une démocratie plus juste. Vous pouvez poser des questions à l'IA ou utiliser la commande /manifeste pour plus de détails sur nos objectifs de justice sociale.`;
                           
     const inlineKeyboard = Markup.inlineKeyboard([
-        // Les boutons Markup.button.url sont remplacés par des boutons callback ou simplement des instructions textuelles
         [Markup.button.callback('En savoir plus sur le RIC', 'ric_info_from_engage')],
         [Markup.button.callback('En savoir plus sur la Destitution', 'destitution_info_from_engage')],
         [Markup.button.callback('Retour au menu principal', 'start_menu')]
@@ -353,7 +413,6 @@ bot.action('show_help', async (ctx) => {
 
 bot.help((ctx) => ctx.reply('Commandes disponibles: /start, /aide, /manifeste, /ric, /destitution, /create_poll, /stats, /imagine'));
 
-// Commande /stats : affiche des statistiques d'utilisation du bot
 bot.command('stats', async (ctx) => {
     const stats = await readJsonFile(STATS_FILE, { totalMessages: 0 });
     const statsMessage = `📊 Statistiques d'utilisation du bot :\nTotal de messages traités : ${stats.totalMessages}`;
@@ -366,8 +425,6 @@ bot.command('manifeste', (ctx) => {
 });
 
 
-
-// Nouvelle commande : /destitution
 async function getDestitutionInfoMarkdown() {
     return `**La Procédure de Destitution : L'Article 68 de la Constitution**
 \nL'Article 68 de la Constitution française prévoit la possibilité de destituer le Président de la République en cas de manquement à ses devoirs manifestement incompatible avec l'exercice de son mandat.
@@ -382,7 +439,6 @@ bot.command('destitution', async (ctx) => {
 });
 
 
-// Fonctions pour les informations RIC et Destitution (utilisées par commandes et actions)
 async function getRicInfoMarkdown() {
     return `**Le Référendum d'Initiative Citoyenne (RIC) : Le Cœur de notre Démocratie !**
 Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décline en plusieurs formes :
@@ -396,12 +452,11 @@ Le RIC est l'outil essentiel pour redonner le pouvoir aux citoyens. Il se décli
 `;
 }
 
-// Nouvelle commande : /ric
 bot.command('ric', async (ctx) => {
     await ctx.replyWithMarkdown(await getRicInfoMarkdown());
 });
 
-// COMMANDE CORRIGÉE ET SIMPLIFIÉE : /imagine [description]
+
 bot.command('imagine', async (ctx) => {
     const topic = ctx.message.text.split(' ').slice(1).join(' ');
     if (!topic) {
@@ -413,7 +468,6 @@ bot.command('imagine', async (ctx) => {
         await ctx.replyWithChatAction('upload_photo');
         await ctx.reply('⏳ Génération de l\'image en cours... Cela peut prendre un moment.');
 
-        // 1. Utilise Groq pour générer une description de l'image
         const imageDescription = await groq.chat.completions.create({
             messages: [
                 {
@@ -424,15 +478,12 @@ bot.command('imagine', async (ctx) => {
             model: 'gemma2-9b-it',
         }).then(res => res.choices[0].message.content);
 
-        // 2. Utilise Gemini pour générer l'image à partir de la description
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image-preview' });
         const result = await model.generateContent(imageDescription);
         const response = await result.response;
         
-        // La méthode generateContent renvoie directement le contenu pour ce modèle.
         const parts = response.candidates[0].content.parts;
         
-        // Recherche la partie qui contient l'image
         for (const part of parts) {
             if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
                 const imageData = part.inlineData.data;
@@ -482,8 +533,6 @@ bot.on('poll_answer', async (ctx) => {
 });
 
 
-// Traitement des messages texte généraux par l'IA (Groq)
-
 bot.on('text', async (ctx) => {
     try {
         const stats = await readJsonFile(STATS_FILE, { totalMessages: 0 });
@@ -494,7 +543,7 @@ bot.on('text', async (ctx) => {
     }
 
     if (ctx.message.text.startsWith('/')) {
-        return; // Ne pas traiter les commandes comme des messages de conversation IA
+        return;
     }
     await ctx.replyWithChatAction('typing');
 
@@ -502,8 +551,8 @@ bot.on('text', async (ctx) => {
         const userMessage = ctx.message.text;
         const aiResponse = await getGroqChatResponse(
             userMessage,
-            'gemma2-9b-it', // Le modèle Groq que vous utilisez
-            rolesAssistant.assistant.content // Rôle Assistant pour Telegram
+            'gemma2-9b-it',
+            "Vous êtes un assistant utile et informatif pour un tableau de bord de manifestation. Vous répondez aux questions sur le mouvement."
         );
         await ctx.reply(aiResponse);
     } catch (error) {
@@ -511,8 +560,6 @@ bot.on('text', async (ctx) => {
         await ctx.reply('Une erreur est survenue lors du traitement de votre demande de conversation IA. Veuillez vérifier la configuration de l\'IA ou réessayer plus tard.');
     }
 });
-
-// Commande /contact pour envoyer un message aux organisateurs
 
 bot.command('contact', async (ctx) => {
     const messageContent = ctx.message.text.split(' ').slice(1).join(' ');
@@ -535,30 +582,19 @@ bot.command('contact', async (ctx) => {
 });
 
 
-// --- Routes de l'API web (CRUD) ---
-
-// FINANCIAL FLOWS
 app.get('/api/financial-flows', (req, res) => res.json(database.financial_flows));
 app.post('/api/financial-flows', async (req, res) => {
     const newFlow = { id: uuidv4(), ...req.body, timestamp: new Date().toISOString() };
     
-    // Logique de boycottage inconscient
     const isBoycotted = boycottsData.boycotts.some(boycott => {
-        // La structure de votre fichier `boycott.json` a un champ `name` au niveau racine
-        // et un champ `targets` qui est un tableau. La logique est d'abord de vérifier
-        // le `name`, puis de parcourir le tableau `targets` si un nom correspond.
-        // Puisque la route `financial-flows` n'a pas de concept de "cibles",
-        // nous allons simplement vérifier le champ `name` de la transaction.
         return boycott.name.toLowerCase() === newFlow.name.toLowerCase();
     });
 
     if (isBoycotted) {
         console.log(`Transaction vers une entité boycottée. Réaffectation de la TVA...`);
-        // Calcule le montant de la TVA (20% dans notre modèle)
         const tvaAmount = newFlow.amount * 0.2;
 
         try {
-            // Appelle l'endpoint interne pour envoyer la TVA au smart contract
             await fetch(`http://localhost:${port}/api/blockchain/recevoir-fonds`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -591,7 +627,6 @@ app.delete('/api/financial-flows/:id', async (req, res) => {
     res.status(204).end();
 });
 
-// AFFAIRES
 app.get('/api/affaires', (req, res) => res.json(database.affaires));
 app.post('/api/affaires/event', async (req, res) => {
     const newEvent = { id: uuidv4(), ...req.body };
@@ -600,11 +635,9 @@ app.post('/api/affaires/event', async (req, res) => {
     res.status(201).json(newEvent);
 });
 
-// RICs
 const RICS_FILE_PATH = path.join(__dirname, 'data', 'rics.json');
 let ricsData = [];
 
-// Fonction pour lire le fichier rics.json
 async function readRicsFile() {
     try {
         const data = await fs.readFile(RICS_FILE_PATH, { encoding: 'utf8' });
@@ -622,7 +655,6 @@ async function readRicsFile() {
     }
 }
 
-// Fonction pour écrire dans le fichier rics.json
 async function writeRicsFile() {
     try {
         await fs.writeFile(RICS_FILE_PATH, JSON.stringify(ricsData, null, 2), { encoding: 'utf8' });
@@ -632,12 +664,10 @@ async function writeRicsFile() {
     }
 }
 
-// Route pour obtenir tous les RIC
 app.get('/api/rics', (req, res) => {
     res.json(ricsData);
 });
 
-// Route pour créer un nouveau RIC via le formulaire
 app.post('/api/rics', async (req, res) => {
     const { question, description, deadline, voteMethod, level, locations } = req.body;
     
@@ -660,7 +690,6 @@ app.post('/api/rics', async (req, res) => {
     res.status(201).json(newRic);
 });
 
-// Route pour mettre à jour les votes d'un RIC
 app.put('/api/rics/:id', async (req, res) => {
     const ricId = req.params.id;
     const { votes_for, votes_against } = req.body;
@@ -682,7 +711,6 @@ app.put('/api/rics/:id', async (req, res) => {
     res.status(200).json(ric);
 });
 
-// TAXES
 app.get('/api/taxes', (req, res) => res.json(database.taxes));
 app.post('/api/taxes', async (req, res) => {
     const newTax = { id: uuidv4(), ...req.body };
@@ -691,27 +719,21 @@ app.post('/api/taxes', async (req, res) => {
     res.status(201).json(newTax);
 });
 
-// ENTITIES
 app.get('/api/entities', (req, res) => res.json(database.entities));
 app.post('/api/entities', async (req, res) => { /* ... */ });
 app.put('/api/entities/:id', async (req, res) => { /* ... */ });
 app.delete('/api/entities/:id', async (req, res) => { /* ... */ });
 
-// BOYCOTTS (Nouvelle route pour le frontend)
-// ROUTES CRUD POUR LES BOYCOTTAGES
 app.get('/api/boycotts', (req, res) => res.json(database.boycotts));
 
-// Route pour ajouter une nouvelle enseigne (CREATE)
 app.post('/api/boycotts', async (req, res) => {
     const newEntity = req.body;
-    // Générer un ID simple (UUID ou autre pour un projet plus grand)
     newEntity.id = `ent_${Date.now()}`; 
     database.boycotts.push(newEntity);
     await writeDatabaseFile();
     res.status(201).json(newEntity);
 });
 
-// Route pour mettre à jour une enseigne (UPDATE)
 app.put('/api/boycotts/:id', async (req, res) => {
     const { id } = req.params;
     const updatedEntity = req.body;
@@ -725,20 +747,18 @@ app.put('/api/boycotts/:id', async (req, res) => {
     }
 });
 
-// Route pour supprimer une enseigne (DELETE)
 app.delete('/api/boycotts/:id', async (req, res) => {
     const { id } = req.params;
     const initialLength = database.boycotts.length;
     database.boycotts = database.boycotts.filter(e => e.id !== id);
     if (database.boycotts.length < initialLength) {
         await writeDatabaseFile();
-        res.status(204).send(); // No Content
+        res.status(204).send();
     } else {
         res.status(404).json({ message: "Entité non trouvée" });
     }
 });
 
-// CAISSE DE MANIFESTATION
 app.get('/api/caisse-manifestation', (req, res) => res.json(database.caisse_manifestation));
 app.post('/api/caisse-manifestation/transaction', async (req, res) => {
     const { type, montant, description } = req.body;
@@ -749,7 +769,6 @@ app.post('/api/caisse-manifestation/transaction', async (req, res) => {
     res.status(201).json(newTransaction);
 });
 
-// Blockchain
 app.post('/api/blockchain/transaction', async (req, res) => {
     const newBlock = { id: uuidv4(), ...req.body, hash: '...', signature: '...', timestamp: new Date().toISOString() };
     database.blockchain.transactions.push(newBlock);
@@ -757,42 +776,87 @@ app.post('/api/blockchain/transaction', async (req, res) => {
     res.status(201).json(newBlock);
 });
 
-// Dashboard Summary
+// server.js (Extrait de la route /api/dashboard/summary)
+
 app.get('/api/dashboard/summary', (req, res) => {
-    const totalTransactions = database.financial_flows.length;
-    const activeAlerts = database.financial_flows.filter(f => f.is_suspicious).length;
-    const riskyEntities = new Set(database.boycotts.map(b => b.name)).size;
-    const caisseSolde = database.caisse_manifestation.solde;
-    const boycottCount = database.boycotts.length;
-    const ricCount = ricsData.length; // Utilisez ricsData ici
-    const beneficiaryCount = database.beneficiaries.length;
-    // Calcul de l'allocation mensuelle basée sur le solde et le nombre de bénéficiaires
-    const monthlyAllocation = beneficiaryCount > 0 ? (caisseSolde / beneficiaryCount) : 0;
-    
-    res.json({
-        totalTransactions,
-        activeAlerts,
-        riskyEntities,
-        caisseSolde,
-        boycottCount,
-        ricCount,
-        beneficiaryCount,
-        monthlyAllocation
-    });
+    try {
+        const totalTransactions = database.financial_flows?.length ?? 0;
+        const activeAlerts = database.financial_flows?.filter(f => f.is_suspicious)?.length ?? 0;
+        const riskyEntities = new Set(database.boycotts?.map(b => b.name))?.size ?? 0;
+        const caisseSolde = database.caisse_manifestation?.solde ?? 0;
+        const boycottCount = database.boycotts?.length ?? 0;
+        const ricCount = database.rics?.length ?? 0;
+        const beneficiaryCount = database.beneficiaries?.length ?? 0;
+        const monthlyAllocation = beneficiaryCount > 0 ? (caisseSolde / beneficiaryCount) : 0;
+        const prefectureCount = database.prefectures?.length ?? 0;
+        const telegramGroupCount = database.telegram_groups?.length ?? 0;
+        
+        // --- NOUVELLES DONNÉES ---
+        const mairiesCount = database.mairies?.length ?? 0;
+        const roundaboutCount = database.roundabout_points?.length ?? 0;
+        const carrefourCount = database.boycotts?.filter(b => b.name === 'Carrefour')?.length ?? 0;
+        const universityCount = database.strategic_locations?.filter(l => l.type === 'Université')?.length ?? 0;
+        const bankCount = database.boycotts?.filter(b => b.type === 'Banque')?.length ?? 0;
+        // Ajout du comptage des commerces assujettis à la TVA
+        const tvaCommerceCount = database.boycotts?.filter(b => b.tax_id === 'tax_vat')?.length ?? 0;
+
+
+        // Calcul du nombre total de manifestants
+        let estimatedManifestantCount = 0;
+        if (database.manifestation_points) {
+            database.manifestation_points.forEach(point => {
+                if (typeof point.count === 'number') {
+                    estimatedManifestantCount += point.count;
+                } else if (typeof point.count === 'string') {
+                    const numberMatch = point.count.match(/\d+/);
+                    if (numberMatch) {
+                        estimatedManifestantCount += parseInt(numberMatch[0]);
+                    } else if (point.count.toLowerCase().includes('plusieurs milliers')) {
+                        estimatedManifestantCount += 2000; // Estimation
+                    }
+                } else if (typeof point.count === 'object' && point.count !== null) {
+                    for (const key in point.count) {
+                        if (typeof point.count[key] === 'number') {
+                            estimatedManifestantCount += point.count[key];
+                        }
+                    }
+                }
+            });
+        }
+
+        res.json({
+            totalTransactions,
+            activeAlerts,
+            riskyEntities,
+            caisseSolde,
+            boycottCount,
+            ricCount,
+            beneficiaryCount,
+            monthlyAllocation,
+            prefectureCount,
+            telegramGroupCount,
+            estimatedManifestantCount,
+            mairiesCount,
+            roundaboutCount,
+            universityCount,
+            carrefourCount,
+            bankCount,
+            tvaCommerceCount // Ajout de la nouvelle donnée
+        });
+    } catch (error) {
+        console.error('Erreur lors de la génération du résumé du tableau de bord:', error);
+        res.status(500).json({ error: 'Erreur lors de la génération du résumé.' });
+    }
 });
 
-// --- Routes de la Blockchain ---
+
+// ... (fin du code)
 app.post('/api/blockchain/recevoir-fonds', async (req, res) => {
     const { amount } = req.body;
     if (!amount) {
         return res.status(400).json({ error: 'Montant manquant.' });
     }
     
-    // TODO: Remplacez cette simulation par l'appel réel au smart contract
-    // const accounts = await web3.eth.getAccounts();
-    // await cvnuContract.methods.recevoirFonds().send({ from: accounts[0], value: web3.utils.toWei(amount.toString(), 'ether') });
-
-    // Simulation de l'appel pour la démonstration
     console.log(`SIMULATION : Envoi de ${amount}€ au smart contract.`);
     database.blockchain.transactions.push({
         id: uuidv4(),
@@ -800,7 +864,6 @@ app.post('/api/blockchain/recevoir-fonds', async (req, res) => {
         amount: amount,
         timestamp: new Date().toISOString()
     });
-    // AJOUT: Mettre à jour le solde de la caisse directement ici
     database.caisse_manifestation.solde += amount;
     await writeDatabaseFile();
 
@@ -808,36 +871,26 @@ app.post('/api/blockchain/recevoir-fonds', async (req, res) => {
 });
 
 app.post('/api/blockchain/decaisser-allocations', async (req, res) => {
-    // Cette route serait protégée et accessible uniquement par le propriétaire du contrat
-    
-    // TODO: Remplacez cette simulation par l'appel réel au smart contract
-    // const ownerAccount = '0x...'; // L'adresse du propriétaire du contrat
-    // await cvnuContract.methods.decaisserAllocations().send({ from: ownerAccount });
-    
-    // Simulation de l'appel pour la démonstration
     console.log("SIMULATION : Décaissement des allocations lancé sur le smart contract.");
     res.status(200).json({ message: 'Décaissement des allocations en cours...' });
 });
 
-// NOUVELLE ROUTE: Inscription des citoyens et création du CV numérique
 app.post('/api/beneficiaries/register', async (req, res) => {
-    const { name, email, cv_score } = req.body; // cv_score simule la valeur du CV
+    const { name, email, cv_score } = req.body;
     if (!name || !email || cv_score === undefined) {
         return res.status(400).json({ error: 'Données manquantes pour l\'inscription.' });
     }
     
-    // Assurez-vous que l'email n'est pas déjà enregistré
     const existingBeneficiary = database.beneficiaries.find(b => b.email === email);
     if (existingBeneficiary) {
         return res.status(409).json({ error: 'Cet email est déjà enregistré.' });
     }
 
-    // Création d'une entrée pour le nouveau bénéficiaire
     const newBeneficiary = {
         id: uuidv4(),
         name,
         email,
-        cv_score: cv_score, // La valeur du CV (entre 500 et 5000)
+        cv_score: cv_score,
         registration_date: new Date().toISOString()
     };
     
@@ -850,9 +903,40 @@ app.post('/api/beneficiaries/register', async (req, res) => {
     });
 });
 
-// --- Démarrage du serveur ---
+app.get('/api/camera-points', (req, res) => res.json(database.cameras_points));
+app.post('/api/camera-points', async (req, res) => {
+    const { name, city, lat, lon, timestamp, video_link } = req.body;
+    if (!name || !city || !lat || !lon) {
+        return res.status(400).json({ error: 'Données manquantes pour le point de caméra.' });
+    }
+    
+    const newCameraPoint = {
+        id: uuidv4(),
+        name,
+        city,
+        lat,
+        lon,
+        timestamp: timestamp || new Date().toISOString(),
+        video_link: video_link || null
+    };
+
+    database.cameras_points.push(newCameraPoint);
+    await writeDatabaseFile();
+    res.status(201).json(newCameraPoint);
+});
+database.missions = [
+    { id: '1', title: 'Collecte de données sur le terrain', description: 'Relevez les positions des caméras de surveillance dans votre ville.', status: 'En cours' },
+    { id: '2', title: 'Analyse des articles de loi', description: 'Examinez les modifications proposées aux articles L3121-1 et L4331-1.', status: 'En cours' },
+    { id: '3', title: 'Cartographie des points de ralliement', description: 'Identifiez et enregistrez les lieux de manifestation potentiels.', status: 'À venir' }
+];
+
+// Nouvelle route d'API pour les missions
+app.get('/api/missions', (req, res) => {
+    res.json(database.missions);
+});
+
 initializeDatabase().then(() => {
-    readRicsFile(); // Lecture du fichier rics.json séparément
+    readRicsFile();
     loadBoycottData();
     bot.launch();
     console.log('Bot Telegram démarré.');

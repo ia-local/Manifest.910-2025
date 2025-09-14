@@ -64,28 +64,27 @@
     }
   ],
   "boycotts": [
-    { "id": "ent_leclerc", "name": "Leclerc", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Paris", "lat": 48.86, "lon": 2.35 }, { "city": "Marseille", "lat": 43.29, "lon": 5.37 }] },
-    { "id": "ent_carrefour", "name": "Carrefour", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Lyon", "lat": 45.76, "lon": 4.83 }, { "city": "Toulouse", "lat": 43.60, "lon": 1.44 }] },
-    { "id": "ent_intermarche", "name": "Intermarché", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Nantes", "lat": 47.21, "lon": -1.55 }, { "city": "Rennes", "lat": 48.11, "lon": -1.67 }] },
-    { "id": "ent_super_u", "name": "Super U", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Angers", "lat": 47.47, "lon": -0.55 }] },
-    { "id": "ent_auchan", "name": "Auchan", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Villeneuve-d'Ascq", "lat": 50.61, "lon": 3.13 }] },
-    { "id": "ent_lidl", "name": "Lidl", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Paris", "lat": 48.87, "lon": 2.37 }] },
-    { "id": "ent_aldi", "name": "Aldi", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{ "city": "Marseille", "lat": 43.32, "lon": 5.41 }] },
-    { "id": "ent_monoprix", "name": "Monoprix", "type": "Distribution", "description": "Chaîne de supermarchés", "tax_id": "tax_vat", "locations": [{"city": "Lyon", "lat": 45.76, "lon": 4.83}] },
-    { "id": "ent_proxy_cocci_market", "name": "Proxy/Cocci-MARKET", "type": "Distribution", "description": "Réseaux de magasins de proximité", "tax_id": "tax_vat", "locations": [{"city": "Toulouse", "lat": 43.60, "lon": 1.44}] },
-    { "id": "ent_total", "name": "TotalEnergies", "type": "Énergie/Stations-service", "description": "Entreprise pétrolière et stations-service", "tax_id": "tax_vat", "locations": [{ "city": "Le Havre", "lat": 49.49, "lon": 0.10 }, { "city": "Rouen", "lat": 49.44, "lon": 1.09 }] },
-    { "id": "ent_starbucks", "name": "Starbucks", "type": "Restauration", "description": "Chaîne de cafés", "tax_id": "tax_vat", "locations": [{ "city": "Paris", "lat": 48.868, "lon": 2.338 }] },
-    { "id": "ent_mcdonalds", "name": "McDonald's", "type": "Restauration Rapide", "description": "Chaîne de fast-food", "tax_id": "tax_vat", "locations": [{ "city": "Paris", "lat": 48.867, "lon": 2.281 }, { "city": "Lyon", "lat": 45.76, "lon": 4.86 }] },
-    { "id": "ent_zara", "name": "Zara", "type": "Habillement", "description": "Enseigne de prêt-à-porter", "tax_id": "tax_vat", "locations": [{ "city": "Paris", "lat": 48.869, "lon": 2.337 }, { "city": "Marseille", "lat": 43.296, "lon": 5.378 }] },
-    { "id": "ent_amazon", "name": "Amazon", "type": "E-commerce", "description": "Plateforme de commerce en ligne", "tax_id": "tax_vat", "locations": [{ "city": "Île-de-France", "lat": 48.86, "lon": 2.35 }] },
-    { "id": "ent_netflix", "name": "Netflix", "type": "Streaming", "description": "Service de vidéo à la demande", "tax_id": "tax_vat", "locations": [{ "city": "France", "lat": 46.60, "lon": 1.88 }] },
+    {
+      "id": "b_movie_1",
+      "type": "movie",
+      "name": "Film 'Le Traître' de Dupont",
+      "reason": "Promotion de politiques toxiques par le réalisateur.",
+      "targets": [
+        {
+          "name": "Billet de cinéma 'Pathé-Gaumont'",
+          "tax_id": "tax_vat"
+        }
+      ]
+    },
+    { "id": "ent_boulangerie", "name": "Boulangerie", "type": "Distribution", "description": "Réseau de boulangeries mentionné dans l'enquête.", "tax_id": "tax_vat", "locations": [{"city": "Paris", "lat": 48.868, "lon": 2.348}] },
+    { "id": "ent_leclerc", "name": "Leclerc", "type": "Distribution", "description": "Chaîne de supermarchés mentionnée dans l'enquête.", "tax_id": "tax_vat", "locations": [{ "city": "Paris", "lat": 48.86, "lon": 2.35 }, { "city": "Marseille", "lat": 43.29, "lon": 5.37 }, { "city": "Strasbourg", "lat": 48.58, "lon": 7.75 }, { "city": "Lille", "lat": 50.63, "lon": 3.06 }] },
 {
-"id": "ent_carrefour",
-"name": "Carrefour",
-"type": "Distribution",
-"description": "Chaîne de supermarchés mentionnée dans l'enquête.",
-"tax_id": "tax_vat",
-"locations": [
+  "id": "ent_carrefour",
+  "name": "Carrefour",
+  "type": "Distribution",
+  "description": "Chaîne de supermarchés mentionnée dans l'enquête.",
+  "tax_id": "tax_vat",
+  "locations": [
     { "city": "Lyon", "lat": 45.76, "lon": 4.83 },
     { "city": "Toulouse", "lat": 43.60, "lon": 1.44 },
     { "city": "Bordeaux", "lat": 44.83, "lon": -0.57 },

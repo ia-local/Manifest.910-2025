@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme Citoyenne - Pupitre de Contrôle</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="crossorigin=""/>
+    <link rel="stylesheet" href="src/css/main.css">
+    <link rel="stylesheet" href="src/css/rics.css">
+    <link rel="stylesheet" href="src/css/dashboard.css">
+    <link rel="stylesheet" href="src/css/ipcam.css">
+    <link rel="stylesheet" href="src/css/blog.css">
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="logo-container">
+            <h2 class="app-title">Plateforme Citoyenne</h2>
+        </div>
+        <div class="user-menu-container">
+            <button class="user-profile-btn" onclick="toggleProfileMenu()">
+                <img src="https://ia-local.github.io/Manifest.910-2025/media/user-icon.png" alt="User Profile" class="user-icon">
+            </button>
+            <div id="profile-menu" class="profile-dropdown-menu">
+                <a href="#">Mon profil</a>
+                <a href="#">Paramètres</a>
+                <a href="#">Déconnexion</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <aside class="main-aside">
+            <nav id="main-navigation">
+            </nav>
+        </aside>
+
+        <main class="main-content" id="main-content">
+            <div class="loading-screen">
+                <h2>Chargement de l'application...</h2>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleProfileMenu() {
+            const menu = document.getElementById('profile-menu');
+            menu.classList.toggle('show');
+        }
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="src/js/app.js" type="module"></script>
+    </body>
+</html>

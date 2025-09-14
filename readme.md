@@ -31,3 +31,37 @@ Ce projet propose de passer d'un modèle de blocage à un modèle de partage. Le
 
 Contexte et Défis
 L'initiative émane d'un parti politique, qui préfère garder son nom confidentiel pour éviter la répression policière et les pressions financières, notamment de la part de la CNCCFP. De nombreux partis (Renaissance, Horizons, EMP, etc.) sont suspectés de fraudes et de manquements dans la gestion de leurs comptes de campagne, soulignant la nécessité d'une transparence et d'une justice accrues.
+========
+
+CAISSE DE MANIFESTATION 647 
+
+https://www.youtube.com/shorts/4vkNXhryHJk
+
+
+============
+elysée abolition du pouvoir excutif
+
+
+L’Élysée & la presse : CENSURER, ESPIONNER, INTIMIDER ⌚ 10' en OFF
+
+https://www.youtube.com/watch?v=_NLqTjb4wrY
+
+
+📼 Extrait 4/4 de    • MACRON CONTRE L'INFO, tout ce qu’il fait p...  
+En 2018, Emmanuel Macron transpose en France de façon très sévère la directive européenne « Secret des affaires ». Dès lors, journalistes, chercheurs, historiens sont entravés dans leurs recherches de la vérité sur le monde du business. Puis, les macronistes tentent d’interdire de filmer l’action de la police sur la voie publique, et d’autoriser l’espionnage des citoyens via leurs téléphones portables. Une offensive totalitaire contre la liberté d’informer. 
+
+========
+
+LA FRANCE TOMBE – Les manifestants à l’Élysée pour révoquer Macron !
+
+https://www.youtube.com/watch?v=u3w2BTHIojU
+
+
+
+Répression policière et financière
+=========
+
+
+https://www.youtube.com/shorts/wRFkPHFGr2c
+
+=======

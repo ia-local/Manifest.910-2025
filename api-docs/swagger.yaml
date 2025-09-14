@@ -25,6 +25,10 @@ tags:
     description: Définition des règles de taxation pour la caisse de manifestation.
   - name: Géolocalisation
     description: Endpoints pour les données géographiques.
+  - name: Blockchain
+    description: Gestion des interactions avec la blockchain simulée.
+  - name: Bénéficiaires
+    description: Gestion des bénéficiaires et du CVNU.
 
 paths:
   /api/financial-flows:
@@ -468,7 +472,54 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ManifestationSite'
+                  
+  /api/camera-points:
+    get:
+      tags:
+        - Géolocalisation
+      summary: Récupère tous les points de caméras de la base de données.
+      responses:
+        '200':
+          description: Liste de tous les points de caméras.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CameraPoint'
+    post:
+      tags:
+        - Géolocalisation
+      summary: Crée un nouveau point de caméra.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CameraPointInput'
+      responses:
+        '201':
+          description: Point de caméra créé avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CameraPoint'
 
+  /api/public-cameras:
+    get:
+      tags:
+        - Géolocalisation
+      summary: Récupère les points de caméras publiques.
+      responses:
+        '200':
+          description: Points de caméras publiques récupérés.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CameraPoint'
+  
   /api/dashboard/summary:
     get:
       tags:
@@ -481,7 +532,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardSummary'
+                
+  /api/blockchain/recevoir-fonds:
+    post:
+      tags:
+        - Blockchain
+        - Caisse de manifestation
+      summary: Reçoit des fonds sur le smart contract (simulation).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FondsTransactionInput'
+      responses:
+        '200':
+          description: Fonds reçus avec succès.
+        '400':
+          description: Montant manquant.
 
+  /api/blockchain/decaisser-allocations:
+    post:
+      tags:
+        - Blockchain
+        - Caisse de manifestation
+      summary: Déclenche le décaissement des allocations (simulation).
+      responses:
+        '200':
+          description: Décaissement en cours.
+          
+  /api/beneficiaries/register:
+    post:
+      tags:
+        - Bénéficiaires
+      summary: Enregistre un nouveau bénéficiaire pour les allocations.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeneficiaryInput'
+      responses:
+        '201':
+          description: Bénéficiaire enregistré avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beneficiary'
+        '400':
+          description: Données d'inscription manquantes.
+        '409':
+          description: Cet email est déjà enregistré.
 
 components:
   schemas:
@@ -842,3 +943,81 @@ components:
         ricCount:
           type: integer
           description: Nombre total de RICS.
+    CameraPoint:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lon:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        video_link:
+          type: string
+          format: uri
+    CameraPointInput:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lon:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        video_link:
+          type: string
+          format: uri
+      required:
+        - name
+        - city
+        - lat
+        - lon
+    FondsTransactionInput:
+      type: object
+      properties:
+        amount:
+          type: number
+          description: Montant de la transaction.
+      required:
+        - amount
+    Beneficiary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        cv_score:
+          type: number
+        registration_date:
+          type: string
+          format: date-time
+    BeneficiaryInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        cv_score:
+          type: number
+      required:
+        - name
+        - email
+        - cv_score
