@@ -10,6 +10,9 @@ const YAML = require('yamljs');
 const Web3 = require('web3');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
+const blog = require('./blog.js');
+const legal = require('./reforme.js');
+const cvnu = require('./cvnu.js');
 const ee = require('@google/earthengine');
 // const { parse } = require('node-html-parser');
 
