@@ -1623,5 +1623,31 @@
     "lat": 48.8703,
     "lon": 2.3168,
     "source": "boutique.elysee.fr"
-  }
+  },
+  "missions": [
+    {
+      "id": "1",
+      "title": "Collecte de données sur le terrain",
+      "description": "Relevez les positions des caméras de surveillance, des mairies ou des ronds-points dans votre ville.",
+      "full_description": "Cette mission vise à créer une base de données collaborative. Les participants doivent utiliser l'application pour géolocaliser les points stratégiques. Ces données sont cruciales pour la cartographie des manifestations et la stratégie de boycott.",
+      "status": "En cours",
+      "rewards": "Reconnaissance sur la plateforme et points de contribution."
+    },
+    {
+      "id": "2",
+      "title": "Analyse des articles de loi",
+      "description": "Examinez les modifications proposées aux articles L3121-1 et L4331-1 et donnez votre avis.",
+      "full_description": "Nous avons besoin de l'expertise de citoyens pour examiner en détail les textes de loi générés par l'IA. Votre rôle est de vérifier la pertinence et les potentielles failles juridiques. Votre analyse sera utilisée pour affiner notre projet de loi.",
+      "status": "En cours",
+      "rewards": "Accès exclusif à des webinaires juridiques et reconnaissance pour votre expertise."
+    },
+    {
+      "id": "3",
+      "title": "Cartographie des points de ralliement",
+      "description": "Identifiez et enregistrez les lieux de manifestation potentiels et les voies d'accès principales.",
+      "full_description": "Aidez-nous à planifier la manifestation du 10 septembre en identifiant les meilleurs lieux de rassemblement, les itinéraires sécurisés et les points de sortie. Votre contribution assure la sécurité et l'efficacité de nos actions.",
+      "status": "À venir",
+      "rewards": "Invitation à la réunion des coordinateurs locaux."
+    }
+  ]
 }

@@ -2,23 +2,10 @@ const express = require('express');
 const path = require('path');
 const IA = require('groq-sdk');
 const fs = require('fs');
-const cors = require('cors');
-const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
-const swaggerDocument = YAML.load('api-docs/swagger.yaml');
-require('dotenv').config();
 
-const app = express();
-const port = 8554;
+// Au lieu de créer une application, on crée un routeur
+const router = express.Router();
 const Groq = new IA({ apiKey: process.env.GROQ_API_KEY });
-
-// Utilisation du middleware pour les fichiers statiques
-app.use(express.static(path.join(__dirname, 'reforme')));
-app.use(express.static(path.join(__dirname, 'output')));
-
-app.use(express.json());
-app.use(cors());
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Données de référence
 const lawArticles = `
@@ -91,56 +78,46 @@ async function generateContent(res, prompt) {
     }
 }
 
-// Routes pour les pages dédiées
-app.get('/cvnu', (req, res) => {
+// Les chemins statiques sont gérés par le serveur principal
+// Les middlewares comme cors et body-parser sont aussi gérés par le serveur principal
+
+// Routes pour les pages dédiées (maintenant des routes API qui renvoient du HTML)
+router.get('/cvnu', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'cvnu.html'));
 });
 
-app.get('/smart_contracts', (req, res) => {
+router.get('/smart_contracts', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'smart_contracts.html'));
 });
 
-app.get('/circular_economy', (req, res) => {
+router.get('/circular_economy', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'circular_economy.html'));
 });
 
-app.get('/developpement', (req, res) => {
+router.get('/developpement', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'developpement.html'));
 });
 
-app.get('/home', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'home.html'));
-});
-
-app.get('/index', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/save', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'save.html'));
-});
-
 // Routes pour générer le contenu de chaque page
-app.get('/generate/cvnu', async (req, res) => {
+router.get('/generate/cvnu', async (req, res) => {
     const prompt = `Génère une présentation détaillée du Curriculum Vitae Numérique Universel (CVNU) en te basant sur le texte de loi. Explique son rôle, comment il est alimenté et validé, et pourquoi il est central à la réforme. Le rendu doit être uniquement en HTML.
     Texte de référence : ${lawCorpus}`;
     await generateContent(res, prompt);
 });
 
-app.get('/generate/smart-contracts', async (req, res) => {
+router.get('/generate/smart-contracts', async (req, res) => {
     const prompt = `Génère une présentation détaillée des Smart Contracts dans le cadre du projet de loi. Définis ce que c'est et comment ils assurent la sécurité, la transparence et l'automatisation des transactions financières. Le rendu doit être uniquement en HTML.
     Texte de référence : ${lawCorpus}`;
     await generateContent(res, prompt);
 });
 
-app.get('/generate/circular-economy', async (req, res) => {
+router.get('/generate/circular-economy', async (req, res) => {
     const prompt = `Génère une présentation détaillée du modèle d'économie circulaire basé sur la TVA. Décris le processus de collecte, de décaissement et de redistribution des recettes de la TVA. Utilise un tableau HTML. Le rendu doit être uniquement en HTML.
     Texte de référence : ${lawCorpus}`;
     await generateContent(res, prompt);
 });
 
-// Route spécifique pour l'étude d'impact économique avec les graphiques
-app.get('/generate/etude-impact-economique', async (req, res) => {
+router.get('/generate/etude-impact-economique', async (req, res) => {
     const prompt = `
         Rédige une ébauche d'étude d'impact économique pour ce projet de loi en te basant sur le texte de loi et les objectifs suivants :
         - Le financement d'un revenu digne (entre 500€ et 5000€) via la valeur du CVNU et non le métier.
@@ -168,8 +145,7 @@ app.get('/generate/etude-impact-economique', async (req, res) => {
     await generateContent(res, prompt);
 });
 
-// Route générale pour les autres options
-app.get('/generate-law-content', async (req, res) => {
+router.get('/generate-law-content', async (req, res) => {
     const audience = req.query.audience || 'detailed_presentation';
     let promptInstruction;
     
@@ -223,8 +199,7 @@ app.get('/generate-law-content', async (req, res) => {
     await generateContent(res, promptInstruction);
 });
 
-// Route pour enregistrer le contenu
-app.post('/save-content', (req, res) => {
+router.post('/save-content', (req, res) => {
     const { content, type } = req.body;
     if (!content || !type) {
         return res.status(400).send('Contenu ou type manquant.');
@@ -245,8 +220,7 @@ app.post('/save-content', (req, res) => {
     });
 });
 
-// Nouvelle route pour lister les fichiers sauvegardés
-app.get('/list-saved-content', (req, res) => {
+router.get('/list-saved-content', (req, res) => {
     const outputDir = path.join(__dirname, 'output');
     fs.readdir(outputDir, (err, files) => {
         if (err) {
@@ -260,10 +234,5 @@ app.get('/list-saved-content', (req, res) => {
     });
 });
 
-app.get('/', (req, res) => {
-    res.redirect('/home');
-});
-
-app.listen(port, () => {
-    console.log(`Serveur démarré à l'adresse http://localhost:${port}`);
-});
+// Exportation du routeur pour qu'il puisse être utilisé par le serveur principal
+module.exports = router;

@@ -10,10 +10,13 @@ const YAML = require('yamljs');
 const Web3 = require('web3');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
-const blog = require('./blog.js');
-const legal = require('./reforme.js');
-const cvnu = require('./cvnu.js');
+const blogRouter = require('./blog.js'); // NOUVEAU: Changé 'blog' en 'blogRouter'
+const cvnuRouter = require('./cvnu.js');
+const reformeRouter = require('./reforme.js');
+const missionsRouter = require('./routes/quests.js'); 
 const ee = require('@google/earthengine');
+const cors = require('cors'); // NOUVEAU: Importez CORS ici
+const sassMiddleware = require('node-sass-middleware'); // NOUVEAU: Importez SASS middleware
 // const { parse } = require('node-html-parser');
 
 // Clés API
@@ -38,6 +41,15 @@ let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste
 let rolesAssistant = { assistant: { content: "Je suis un assistant IA utile et informatif." } };
 let rolesUser = { user: { content: "Je suis un utilisateur." } };
 
+// Toutes les routes les quests.js commenceront par /missions
+app.use('/missions', missionsRouter);
+// Toutes les routes du blog.js commenceront par /blog
+app.use('/blog', blogRouter);
+// Toutes les routes de cvnu.js commenceront par /cvnu
+app.use('/cvnu', cvnuRouter);
+
+// Toutes les routes de reforme.js commenceront par /reforme
+app.use('/reforme', reformeRouter);
 // --- Configuration du serveur Express ---
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -51,6 +63,18 @@ const ORGANIZER_GROUP_ID = "https://ia-local.github.io/Manifest.910-2025";
 app.get('/api/prefectures', (req, res) => {
     res.json(database.prefectures);
 });
+
+// Configuration et service du SASS middleware
+app.use(
+  sassMiddleware({
+    src: path.join(__dirname, 'public', 'src', 'css'),
+    dest: path.join(__dirname, 'public', 'src', 'css'),
+    debug: true,
+    outputStyle: 'compressed',
+    prefix: '/src/css'
+  })
+);
+
 
 const gouv_lawArticles = {
     objectifs: [
@@ -111,11 +135,20 @@ async function writeDatabaseFile() {
     return writeQueue;
 }
 
+// ----------------------------------------------------------------------
+// ÉTAPE IMPORTANTE : Supprimer l'ancienne initialisation de database.missions
+// et la route obsolète /api/missions
+// ----------------------------------------------------------------------
 async function initializeDatabase() {
     try {
         const data = await fs.readFile(DATABASE_FILE_PATH, { encoding: 'utf8' });
         database = JSON.parse(data);
         console.log('Base de données chargée avec succès.');
+        // Assurez-vous d'initialiser missions ici si le fichier est vide
+        if (!database.missions) {
+            database.missions = [];
+            await writeDatabaseFile();
+        }
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.warn('Le fichier database.json n\'existe pas, initialisation de la base de données vide.');
@@ -133,7 +166,8 @@ async function initializeDatabase() {
                 beneficiaries: [],
                 cv_contracts: [],
                 cameras_points: [], 
-                blog_posts: [] 
+                blog_posts: [],
+                missions: [] // NOUVEAU: Assurez-vous que le tableau des missions est initialisé 
             };
             await writeDatabaseFile();
         } else {
@@ -142,7 +176,6 @@ async function initializeDatabase() {
         }
     }
 }
-
 async function readJsonFile(filePath, defaultValue = {}) {
     try {
         await fs.mkdir(path.dirname(filePath), { recursive: true });

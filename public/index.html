@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="src/css/dashboard.css">
     <link rel="stylesheet" href="src/css/ipcam.css">
     <link rel="stylesheet" href="src/css/blog.css">
+    <link rel="stylesheet" href="src/css/cvnu.css">
+    <link rel="stylesheet" href="src/css/legal.css">
+    <link rel="stylesheet" href="src/css/missions.css">
 </head>
 <body>
 <div class="app">
@@ -22,7 +25,7 @@
                 <img src="https://ia-local.github.io/Manifest.910-2025/media/user-icon.png" alt="User Profile" class="user-icon">
             </button>
             <div id="profile-menu" class="profile-dropdown-menu">
-                <a href="#">Mon profil</a>
+                <a href="#" id="open-cv-modal-btn">Mon profil CVNU</a>
                 <a href="#">Paramètres</a>
                 <a href="#">Déconnexion</a>
             </div>
@@ -44,11 +47,14 @@
     <footer class="app-footer">
         <div class="logo-container">
             <h2 class="app-title">RoadMap</h2>
+            <h2 class="app-reform">
+                <a href="#" data-page="legal" class="footer-link">Loi & Réforme</a>
+            </h2>
         </div>
-                <div class="logo-container">
+        <div class="logo-container">
             <h2 class="app-title">Center</h2>
         </div>
-                <div class="logo-container">
+        <div class="logo-container">
             <h2 class="app-title">Map</h2>
         </div>
     </footer>
@@ -59,6 +65,13 @@
             menu.classList.toggle('show');
         }
     </script>
+    <div id="cvnu-modal" class="cvnu-modal">
+    <div class="cvnu-modal-content">
+        <span class="close-btn" id="close-cv-modal-btn">&times;</span>
+        <div id="cvnu-modal-body">
+            </div>
+    </div>
+</div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="src/js/app.js" type="module"></script>
     </body>

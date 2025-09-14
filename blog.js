@@ -1,32 +1,36 @@
 require('dotenv').config();
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const fs = require('fs');
+const fs = require('fs').promises; // Utilise fs.promises pour les opérations asynchrones
 const path = require('path');
 const Groq = new require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const sharp = require('sharp');
-const app = express();
-const port = 5007;
+const router = express.Router(); // Remplacé 'app' par 'router'
 
 // Modules pour la documentation Swagger
 const swaggerUi = require('swagger-ui-express');
 const yaml = require('yamljs');
-const swaggerDocument = yaml.load('./api-docs/swagger.yaml');
+const swaggerDocument = yaml.load(path.join(__dirname, 'api-docs', 'swagger.yaml'));
 
-app.use(express.static('public/'));
-app.use('/output', express.static(path.join(__dirname, 'output')));
-app.use(express.json({ limit: '10mb' }));
+// --- Configuration ---
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Route pour servir la documentation Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Les middlewares pour ce routeur sont ici
+router.use(express.static('public/'));
+router.use('/output', express.static(path.join(__dirname, 'output')));
+router.use(express.json({ limit: '10mb' }));
 
-app.get('/', (req, res) => {
+// Route pour servir la documentation Swagger UI (localement pour le module blog)
+router.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Route principale pour le blog
+router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'blog.html'));
 });
 
 // Route générique pour la génération d'un titre
-app.get('/title', async (req, res) => {
+router.get('/title', async (req, res) => {
     const topic = req.query.topic;
     if (!topic) {
         return res.status(400).json({ error: 'Le paramètre "topic" est manquant.' });
@@ -50,7 +54,7 @@ app.get('/title', async (req, res) => {
 });
 
 // Route générique pour la génération d'un article de blog
-app.get('/content', async (req, res) => {
+router.get('/content', async (req, res) => {
     const topic = req.query.topic;
     if (!topic) {
         return res.status(400).json({ error: 'Le paramètre "topic" est manquant.' });
@@ -94,8 +98,7 @@ async function generateImageDescription(topic) {
 }
 
 // Route générique pour la génération d'une image
-app.get('/image', async (req, res) => {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+router.get('/image', async (req, res) => {
     const topic = req.query.topic;
     if (!topic) {
         return res.status(400).json({ error: 'Le paramètre "topic" est manquant.' });
@@ -128,7 +131,7 @@ app.get('/image', async (req, res) => {
 });
 
 // Route pour la sauvegarde
-app.post('/save', async (req, res) => {
+router.post('/save', async (req, res) => {
     const { title, topic, imageData, content } = req.body;
     const fileName = `${topic}_${Date.now()}`;
     const outputDir = path.join(__dirname, 'output');
@@ -136,12 +139,10 @@ app.post('/save', async (req, res) => {
     const contentPath = path.join(outputDir, `${fileName}.md`);
 
     try {
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
-        }
+        await fs.mkdir(outputDir, { recursive: true });
         const imageBuffer = Buffer.from(imageData, 'base64');
         const webpBuffer = await sharp(imageBuffer).webp().toBuffer();
-        fs.writeFileSync(imagePath, webpBuffer);
+        await fs.writeFile(imagePath, webpBuffer);
 
         const markdownContent = `
 # ${title}
@@ -150,7 +151,7 @@ app.post('/save', async (req, res) => {
 
 ${content}
         `;
-        fs.writeFileSync(contentPath, markdownContent);
+        await fs.writeFile(contentPath, markdownContent);
         res.status(200).send('Contenu enregistré avec succès !');
     } catch (error) {
         console.error('Erreur :', error);
@@ -159,15 +160,15 @@ ${content}
 });
 
 // Nouvelle route pour récupérer la liste des articles de blog
-app.get('/blog', async (req, res) => {
+router.get('/blog', async (req, res) => {
     const outputDir = path.join(__dirname, 'output');
     try {
-        const files = await fs.promises.readdir(outputDir);
+        const files = await fs.readdir(outputDir);
         const blogPosts = [];
 
         for (const file of files) {
             if (file.endsWith('.md')) {
-                const markdownContent = await fs.promises.readFile(path.join(outputDir, file), 'utf-8');
+                const markdownContent = await fs.readFile(path.join(outputDir, file), 'utf-8');
                 const imageFileName = file.replace('.md', '.webp');
                 
                 const lines = markdownContent.split('\n');
@@ -191,4 +192,4 @@ app.get('/blog', async (req, res) => {
     }
 });
 
-app.listen(port, () => console.log(`Serveur en cours d'exécution sur le port http://localhost:${port}/blog.html`));
+module.exports = router;

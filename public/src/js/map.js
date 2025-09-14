@@ -136,6 +136,12 @@ const entityIcons = {
         iconAnchor: [16, 32],
         popupAnchor: [0, -32]
     }),
+    'Amazon': L.icon({
+        iconUrl: 'src/img/Amazon-icon.png',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+    }),
     'Intermarché': L.icon({
         iconUrl: 'src/img/Intermarche.png',
         iconSize: [32, 32],

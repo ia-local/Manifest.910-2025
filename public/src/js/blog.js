@@ -1,80 +1,125 @@
-// Fichier : public/src/js/blog.js
-// Ce fichier gère l'affichage des articles de blog.
+// La fonction d'initialisation que app.js va importer
+export function initBlogPage() {
+    console.log("Initialisation de la page Blog...");
 
-export async function initBlogPage() {
-    const container = document.getElementById('blog-posts-container');
-    const modal = document.getElementById('article-modal');
-    const closeBtn = document.querySelector('.close-btn');
+    const mainContent = document.getElementById('main-content');
+    const titleElement = document.getElementById('article-title');
+    const imageContainer = document.getElementById('imageTopic');
+    const resultatsTopic = document.getElementById('resultatsTopic');
+    const controls = document.querySelector('.controls');
 
-    // Vérifier si les éléments existent avant de continuer
-    if (!container) {
-        console.error("Le conteneur 'blog-posts-container' est introuvable.");
-        return;
-    }
-
-    try {
-        // Mettre à jour la bonne route API pour charger les articles
-        const response = await fetch('/api/blog/posts');
-        if (!response.ok) {
-            throw new Error('Erreur de chargement des articles.');
+    // Génération du contenu textuel (article)
+    const generateContent = async (topic) => {
+        resultatsTopic.innerHTML = '<p>Chargement de l\'article...</p>';
+        try {
+            const response = await fetch(`/blog/content?topic=${topic}`);
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error);
+            }
+            const content = await response.text();
+            resultatsTopic.innerHTML = content;
+        } catch (error) {
+            console.error('Erreur lors de la génération du contenu :', error);
+            resultatsTopic.innerHTML = `Une erreur est survenue lors de la génération de l'article : ${error.message}`;
         }
-        const posts = await response.json();
+    };
 
-        container.innerHTML = ''; // Efface le message de chargement
-
-        if (posts.length === 0) {
-            container.innerHTML = '<p>Aucun article n\'a encore été enregistré.</p>';
-            return;
+    // Génération de l'image
+    const generateImage = async (topic) => {
+        imageContainer.innerHTML = '<p>Chargement de l\'image...</p>';
+        try {
+            const response = await fetch(`/blog/image?topic=${topic}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error);
+            }
+            const imageData = await response.json();
+            const imageElement = document.createElement('img');
+            imageElement.src = `data:image/webp;base64,${imageData.image}`;
+            imageElement.alt = `Image illustrant le thème ${topic}`;
+            imageContainer.innerHTML = '';
+            imageContainer.appendChild(imageElement);
+        } catch (error) {
+            console.error('Erreur lors de la génération de l\'image :', error);
+            imageContainer.innerHTML = `Une erreur est survenue : ${error.message}`;
         }
+    };
 
-        posts.forEach(post => {
-            const card = document.createElement('article');
-            card.className = 'blog-card';
+    // Génération du titre
+    const generateTitle = async (topic) => {
+        titleElement.innerHTML = '<p>Chargement du titre...</p>';
+        try {
+            const response = await fetch(`/blog/title?topic=${topic}`);
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error);
+            }
+            const title = await response.text();
+            titleElement.innerHTML = title;
+        } catch (error) {
+            console.error('Erreur lors de la génération du titre :', error);
+            titleElement.innerHTML = `Erreur de titre : ${error.message}`;
+        }
+    };
 
-            const title = document.createElement('h3');
-            title.textContent = post.title;
+    // Gestionnaire de clic pour les liens du menu
+    document.querySelectorAll('.side-menu nav a').forEach(link => {
+        link.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const topic = link.dataset.topic;
 
-            const image = document.createElement('img');
-            image.alt = post.title;
-            // Utiliser la propriété "media" renvoyée par l'API
-            image.src = post.media;
+            // Afficher le menu de contrôle
+            controls.classList.remove('hidden');
 
-            card.appendChild(title);
-            card.appendChild(image);
+            // Générer tout le contenu
+            await generateTitle(topic);
+            await generateImage(topic);
+            await generateContent(topic);
 
-            // Gérer l'ouverture de la modale au clic
-            card.addEventListener('click', () => {
-                const modalImage = document.getElementById('modal-image');
-                const modalTitle = document.getElementById('modal-title');
-                const modalContent = document.getElementById('modal-article-content');
+            // Mettre à jour les gestionnaires de clic pour la nouvelle thématique
+            document.querySelector('.regenerate-title').onclick = () => generateTitle(topic);
+            document.querySelector('.regenerate-image').onclick = () => generateImage(topic);
+            document.querySelector('.regenerate-content').onclick = () => generateContent(topic);
+            document.querySelector('.save-content').onclick = async () => {
+                const imageElement = imageContainer.querySelector('img');
+                const content = resultatsTopic.innerHTML;
+                const title = titleElement.textContent;
 
-                if (modalImage && modalTitle && modalContent && modal) {
-                    modalImage.src = post.media;
-                    modalTitle.textContent = post.title;
-                    // Utiliser la propriété "article" renvoyée par l'API
-                    modalContent.innerHTML = post.article;
-                    modal.style.display = 'block';
+                if (imageElement && content && title) {
+                    const imageData = imageElement.src.split(',')[1];
+                    try {
+                        const response = await fetch('/blog/save', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ title, topic, imageData, content }),
+                        });
+                        if (response.ok) {
+                            alert('Contenu enregistré avec succès !');
+                        } else {
+                            const errorText = await response.text();
+                            alert(`Erreur lors de l'enregistrement : ${errorText}`);
+                        }
+                    } catch (error) {
+                        console.error('Erreur :', error);
+                        alert('Erreur lors de l\'enregistrement du contenu.');
+                    }
+                } else {
+                    alert('Titre, image ou contenu manquant.');
                 }
-            });
-
-            container.appendChild(card);
+            };
         });
-
-    } catch (error) {
-        console.error('Erreur :', error);
-        container.innerHTML = `<p>Impossible de charger les articles : ${error.message}</p>`;
-    }
-    
-    // Gérer la fermeture de la modale
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-    }
-    
-    window.addEventListener('click', (event) => {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
     });
+    
+    // Ajout d'un message initial pour la page
+    titleElement.innerHTML = 'Bienvenue sur le Blog';
+    imageContainer.innerHTML = '';
+    resultatsTopic.innerHTML = '<p>Sélectionnez une thématique dans le menu de gauche pour générer un article de blog complet.</p>';
+    controls.classList.add('hidden');
+
 }
+
+// Note: Le "DOMContentLoaded" est retiré car c'est maintenant app.js qui gère le chargement
+// document.addEventListener('DOMContentLoaded', initBlogPage);

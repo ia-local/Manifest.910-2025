@@ -541,7 +541,7 @@
       "lon": 5.3957,
       "type": "fixed",
       "description": "Surveillance des tribunes et des entrées du stade",
-      "video_link": "https://www.youtube.com/watch?v=F_fV3-m50-g"
+      "video_link": "https://www.youtube.com/shorts/xYTDkwZnikE"
     },
     {
       "id": "16",
@@ -849,6 +849,14 @@
     "video_link": "https://www.youtube.com/shorts/8wR4VZF5UpQ",
     "source": "AES TV"
   },
+      {
+    "city": "Pau",
+    "lat": 43.2951,
+    "lon": -0.370797,
+    "count": "2500",
+    "video_link": "https://www.youtube.com/watch?v=xwTfADirufs",
+    "source": "youtube"
+  },
     {
     "city": "Ploërmel",
     "lat": 47.929286,
@@ -857,9 +865,9 @@
     "video_link": "https://www.youtube.com/watch?v=K9-l_Aqf3Hw",
     "source": "Les Infos du Pays Gallo"
   },
-    { "city": "Dublin", "country": "Irlande", "name": "Ambassade de France", "lat": 53.338706, "lon": -6.249520, "count": "À recenser", "video_link": null},
+    { "city": "Dublin", "country": "Irlande", "name": "Ambassade de France", "lat": 53.338706, "lon": -6.249520, "count": "1 000 000", "video_link": "https://www.youtube.com/shorts/4ecsRbPunEk"},
     { "city": "Madrid", "country": "Espagne", "lat": 40.416775, "lon": -3.703790, "count": "Milliers", "source": "Divers médias espagnols" },
-    { "city": "Bruxelles", "country": "Belgique", "lat": 50.850346, "lon": 4.351721, "count": "Données à vérifier", "source": "Non confirmée pour cette date","video_link": "https://www.youtube.com/shorts/BB4yltCWAFU" },
+    { "city": "Bruxelles", "country": "Belgique", "lat": 50.850346, "lon": 4.351721, "count": "Données à vérifier", "source": "Non confirmée pour cette date","video_link": "https://www.youtube.com/shorts/BB4yltCWAFU,https://www.youtube.com/shorts/9fyJzxQ879k" },
     { "city": "Berlin", "country": "Allemagne", "lat": 52.520008, "lon": 13.404954, "count": "Données à vérifier", "source": "Non confirmée pour cette date" }
   ],
   "strategic_locations": [
@@ -1622,5 +1630,31 @@
     "lat": 48.8703,
     "lon": 2.3168,
     "source": "boutique.elysee.fr"
-  }
+  },
+   "missions": [
+    {
+      "id": "1",
+      "title": "Collecte de données sur le terrain",
+      "description": "Relevez les positions des caméras de surveillance, des mairies ou des ronds-points dans votre ville.",
+      "full_description": "Cette mission vise à créer une base de données collaborative. Les participants doivent utiliser l'application pour géolocaliser les points stratégiques. Ces données sont cruciales pour la cartographie des manifestations et la stratégie de boycott.",
+      "status": "En cours",
+      "rewards": "Reconnaissance sur la plateforme et points de contribution."
+    },
+    {
+      "id": "2",
+      "title": "Analyse des articles de loi",
+      "description": "Examinez les modifications proposées aux articles L3121-1 et L4331-1 et donnez votre avis.",
+      "full_description": "Nous avons besoin de l'expertise de citoyens pour examiner en détail les textes de loi générés par l'IA. Votre rôle est de vérifier la pertinence et les potentielles failles juridiques. Votre analyse sera utilisée pour affiner notre projet de loi.",
+      "status": "En cours",
+      "rewards": "Accès exclusif à des webinaires juridiques et reconnaissance pour votre expertise."
+    },
+    {
+      "id": "3",
+      "title": "Cartographie des points de ralliement",
+      "description": "Identifiez et enregistrez les lieux de manifestation potentiels et les voies d'accès principales.",
+      "full_description": "Aidez-nous à planifier la manifestation du 10 septembre en identifiant les meilleurs lieux de rassemblement, les itinéraires sécurisés et les points de sortie. Votre contribution assure la sécurité et l'efficacité de nos actions.",
+      "status": "À venir",
+      "rewards": "Invitation à la réunion des coordinateurs locaux."
+    }
+  ]
 }

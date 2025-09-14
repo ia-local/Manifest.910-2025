@@ -5,17 +5,18 @@ import { initMap } from './map.js';
 import { initBlogPage } from './blog.js';
 import { initMissionsPage } from './missions.js';
 import { initRicPage } from './rics.js'; 
-import { initDashboard } from './dashboard.js'; // Importe la nouvelle fonction initDashboard
-
-// Les fonctions d'initialisation ne sont plus ajoutées à l'objet 'window'
-// car elles sont gérées par le système de modules.
-
+import { initDashboard } from './dashboard.js'; 
+import { initLegalPage } from './legal.js'; // NOUVEAU: Importe la fonction pour la page légale
+import { initCvnuPage } from './cvnu.js';
+import { initCvnuModal } from './modalCvnu.js';
 /**
  * Fonction principale d'initialisation de l'application au chargement de la page.
  */
 function initializeApp() {
     loadAsideMenu();
+    attachNavigationEvents(); // NOUVEAU: Appelle la fonction d'attachement d'événements
     loadPage('home');
+    initCvnuModal(); // NOUVEAU: Initialise le comportement du modal CVNU
 
     const loadingScreen = document.querySelector('.loading-screen');
     if (loadingScreen) {
@@ -36,18 +37,36 @@ function loadAsideMenu() {
                 <h3>Plateforme Citoyenne</h3>
             </div>
             <ul>
-                <li><a href="#" onclick="loadPage('home')" data-page="home">Accueil</a></li>
-                <li><a href="#" onclick="loadPage('dashboard')" data-page="dashboard">Tableau de bord</a></li>
-                <li><a href="#" onclick="loadPage('ric')" data-page="ric">RIC</a></li>
-                <li><a href="#" onclick="loadPage('map')" data-page="map">map</a></li>
-                <li><a href="#" onclick="loadPage('blog')" data-page="blog">Blog</a></li>
-                <li><a href="#" onclick="loadPage('missions')" data-page="missions">Missions</a></li> 
-                <li><a href="#" onclick="loadPage('organisation')" data-page="organisation">Organisation</a></li>
-                <li><a href="#" onclick="loadPage('contacts')" data-page="contacts">Contacts</a></li>
-                <li><a href="#" onclick="loadPage('affaires')" data-page="affaires">Affaires</a></li>
+                <li><a href="#" data-page="home">Accueil</a></li>
+                <li><a href="#" data-page="dashboard">Tableau de bord</a></li>
+                <li><a href="#" data-page="cvnu">cvnu</a></li>
+                <li><a href="#" data-page="ric">RIC</a></li>
+                <li><a href="#" data-page="map">Carte</a></li>
+                <li><a href="#" data-page="blog">Blog</a></li>
+                <li><a href="#" data-page="missions">Missions</a></li> 
+                <li><a href="#" data-page="organisation">Organisation</a></li>
+                <li><a href="#" data-page="contacts">Contacts</a></li>
+                <li><a href="#" data-page="affaires">Affaires</a></li>
             </ul>
         `;
     }
+}
+
+/**
+ * Attache les écouteurs d'événements de clic aux liens de navigation.
+ */
+function attachNavigationEvents() {
+    // Sélectionne tous les liens de l'aside et du footer
+    const allLinks = document.querySelectorAll('.main-aside a, .app-footer a');
+    allLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageName = e.target.dataset.page;
+            if (pageName) {
+                loadPage(pageName);
+            }
+        });
+    });
 }
 
 /**
@@ -57,7 +76,9 @@ function loadAsideMenu() {
 async function loadPage(pageName) {
     const mainContent = document.getElementById('main-content');
     const asideLinks = document.querySelectorAll('.main-aside a');
+    const footerLinks = document.querySelectorAll('.app-footer a');
 
+    // Mise à jour de la classe 'active' pour les liens de l'aside
     asideLinks.forEach(link => {
         link.classList.toggle('active', link.dataset.page === pageName);
     });
@@ -70,22 +91,27 @@ async function loadPage(pageName) {
         const html = await response.text();
         mainContent.innerHTML = html;
         
-        // Initialise la page une fois que son HTML est chargé
         switch (pageName) {
             case 'dashboard':
-                initDashboard(); // Appelle la fonction importée
+                initDashboard();
+                break;
+            case 'cvnu': // NOUVEAU: Cas pour la page CVNU
+                initCvnuPage();
                 break;
             case 'ric':
                 initRicPage();
                 break;
             case 'map':
-                initmapPage();
+                initMapPage();
                 break;
-            case 'blog':
-                initBlogPage();
-                break;
+        case 'blog':
+            initBlogPage(); // L'appel est déjà en place
+            break;
             case 'missions':
                 initMissionsPage();
+                break;
+            case 'legal':
+                initLegalPage(); // NOUVEAU: Appel à la fonction d'initialisation de la page légale
                 break;
             default:
                 console.log(`Page ${pageName} chargée, pas de fonction d'initialisation spécifique.`);
@@ -98,21 +124,27 @@ async function loadPage(pageName) {
     }
 }
 
-// ... (début du code)
-
 async function fetchAllData() {
     try {
-        const databaseResponse = await fetch('/database.json');
-        if (!databaseResponse.ok) {
-            throw new Error(`Erreur de chargement de la base de données : ${databaseResponse.statusText}`);
-        }
-        const data = await databaseResponse.json();
-
-        const cameraResponse = await fetch('/api/public-cameras');
+        const [
+            databaseResponse,
+            cameraResponse,
+            ricsResponse,
+            boycottsResponse
+        ] = await Promise.all([
+            fetch('/database.json'),
+            fetch('/api/public-cameras'),
+            fetch('/api/rics'),
+            fetch('/api/boycotts')
+        ]);
+        
+        const data = databaseResponse.ok ? await databaseResponse.json() : {};
         const cameraPoints = cameraResponse.ok ? await cameraResponse.json() : [];
+        const ricsData = ricsResponse.ok ? await ricsResponse.json() : [];
+        const boycottsData = boycottsResponse.ok ? await boycottsResponse.json() : [];
         
         return {
-            boycotts: data.boycotts || [],
+            boycotts: boycottsData || data.boycotts || [],
             prefectures: data.prefectures || [],
             telegramGroups: data.telegram_groups || [],
             manifestationPoints: data.manifestation_points || [],
@@ -121,25 +153,27 @@ async function fetchAllData() {
             portePoints: data.porte_points || [],
             elyseePoint: data.elysee_point,
             cameraPoints: cameraPoints,
-            mairies: data.mairies || []
+            mairies: data.mairies || [],
+            rics: ricsData || []
         };
     } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
-        return { boycotts: [], prefectures: [], telegramGroups: [], manifestationPoints: [], strategicLocations: [], roundaboutPoints: [], portePoints: [], elyseePoint: null, cameraPoints: [], mairies: [] };
+        return { boycotts: [], prefectures: [], telegramGroups: [], manifestationPoints: [], strategicLocations: [], roundaboutPoints: [], portePoints: [], elyseePoint: null, cameraPoints: [], mairies: [], rics: [] };
     }
 }
 
-async function initmapPage() {
+// Renommage de la fonction d'initialisation de la carte pour la cohérence
+async function initMapPage() {
     console.log("Initialisation de la page map...");
     try {
         const data = await fetchAllData();
-        
         const mapContainer = document.getElementById('map');
         if (mapContainer && typeof initMap === 'function') {
             initMap(data.boycotts, data.prefectures, data.telegramGroups, data.manifestationPoints, data.strategicLocations, data.roundaboutPoints, data.portePoints, data.elyseePoint, data.cameraPoints, data.mairies);
         } else {
             console.error('Erreur: Le conteneur de carte ou la fonction initMap est manquant.');
         }
+
         const form = document.getElementById('new-boycott-form');
         if (form) {
             form.addEventListener('submit', async (e) => {
@@ -164,7 +198,7 @@ async function initmapPage() {
                     alert('Enseigne ajoutée avec succès !');
                     loadPage('map');
                 } else {
-                    alert('Erreur lors de l ajout de lenseigne.');
+                    alert('Erreur lors de l’ajout de l’enseigne.');
                 }
             });
         }
@@ -173,12 +207,13 @@ async function initmapPage() {
     }
 }
 
-// Déclencher l'initialisation de l'application quand le DOM est prêt
 document.addEventListener('DOMContentLoaded', initializeApp);
 
-// Rendre loadPage globale pour les appels onclick dans le HTML
+// Les fonctions globales sont déconseillées mais sont nécessaires pour les appels onclick dans le HTML existant
+// La bonne pratique est d'utiliser des écouteurs d'événements comme dans attachNavigationEvents()
 window.loadPage = loadPage;
 window.initRicPage = initRicPage;
-window.initmapPage = initmapPage;
+window.initmapPage = initMapPage;
 window.initBlogPage = initBlogPage;
 window.initMissionsPage = initMissionsPage;
+window.initCvnuPage = initCvnuPage; // Rendre initCvnuPage globale pour le modal

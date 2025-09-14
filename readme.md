@@ -36,10 +36,23 @@ L'initiative émane d'un parti politique, qui préfère garder son nom confident
 CAISSE DE MANIFESTATION 647 
 
 https://www.youtube.com/shorts/4vkNXhryHJk
+https://www.youtube.com/shorts/5JdfvB9mKds
+https://www.youtube.com/shorts/IUG2L-FyfUY
 
+https://www.youtube.com/shorts/tI7ku8lEvr0
 
 ============
 elysée abolition du pouvoir excutif
+
+=====
+MANIFESTATION 
+=====
+PAU > https://www.youtube.com/watch?v=xwTfADirufs
+
+=====
+actions immédiate
+=====
+https://www.youtube.com/shorts/iSbavzQM21A
 
 
 L’Élysée & la presse : CENSURER, ESPIONNER, INTIMIDER ⌚ 10' en OFF
