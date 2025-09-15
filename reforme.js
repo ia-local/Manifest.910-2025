@@ -6,6 +6,7 @@ const fs = require('fs');
 // Au lieu de créer une application, on crée un routeur
 const router = express.Router();
 const Groq = new IA({ apiKey: process.env.GROQ_API_KEY });
+const SMART_CONTRACT_API_URL = `http://localhost:${process.env.PORT || 3000}/smartContract/api`;
 
 // Données de référence
 const lawArticles = `
@@ -106,11 +107,17 @@ router.get('/generate/cvnu', async (req, res) => {
 });
 
 router.get('/generate/smart-contracts', async (req, res) => {
-    const prompt = `Génère une présentation détaillée des Smart Contracts dans le cadre du projet de loi. Définis ce que c'est et comment ils assurent la sécurité, la transparence et l'automatisation des transactions financières. Le rendu doit être uniquement en HTML.
-    Texte de référence : ${lawCorpus}`;
-    await generateContent(res, prompt);
-});
+    try {
+        const solFilesResponse = await axios.get(`${SMART_CONTRACT_API_URL}/sol-files`);
+        const solFiles = solFilesResponse.data.map(file => `<li>${file}</li>`).join('');
 
+        const prompt = `Génère une présentation détaillée des Smart Contracts dans le cadre du projet de loi. Définis ce que c'est et comment ils assurent la sécurité, la transparence et l'automatisation des transactions financières. Le rendu doit être uniquement en HTML. Fais référence aux fichiers Solidity suivants : <ul>${solFiles}</ul>`;
+        await generateContent(res, prompt);
+    } catch (error) {
+        console.error("Erreur lors de la génération du contenu des smart contracts:", error);
+        res.status(500).send("Erreur lors de la génération du contenu.");
+    }
+});
 router.get('/generate/circular-economy', async (req, res) => {
     const prompt = `Génère une présentation détaillée du modèle d'économie circulaire basé sur la TVA. Décris le processus de collecte, de décaissement et de redistribution des recettes de la TVA. Utilise un tableau HTML. Le rendu doit être uniquement en HTML.
     Texte de référence : ${lawCorpus}`;

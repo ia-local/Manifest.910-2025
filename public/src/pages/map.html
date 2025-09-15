@@ -6,11 +6,25 @@
 
     <section class="map-section">
         <h2>Carte de la manifestation</h2>
-        <div id="map" style="height: 500px;"></div>
+        <div id="map"></div>
         
-        <div id="map-legend" class="map-legend">
-            <h4>Légende (Cliquez pour filtrer)</h4>
-            <ul id="legend-list"></ul>
+        <div class="map-controls">
+            <div class="map-filter">
+                <label for="geographical-level-filter">Filtrer par niveau de scrutin:</label>
+                <select id="geographical-level-filter">
+                    <option value="all">Tous les niveaux</option>
+                    <option value="europe">Europe</option>
+                    <option value="national">National</option>
+                    <option value="regional">Régional</option>
+                    <option value="departmental">Départemental</option>
+                    <option value="communal">Communal</option>
+                    <option value="local">Local</option>
+                </select>
+            </div>
+            <div id="map-legend" class="map-legend">
+                <h4>Légende (Cliquez pour filtrer)</h4>
+                <ul id="legend-list"></ul>
+            </div>
         </div>
     </section>
 
@@ -19,26 +33,20 @@
         <form id="new-boycott-form">
             <label for="name">Nom de l'enseigne :</label>
             <input type="text" id="name" name="name" required>
-
             <label for="type">Type :</label>
             <input type="text" id="type" name="type" required>
-
             <label for="description">Description :</label>
             <textarea id="description" name="description" required></textarea>
-
             <label for="lat">Latitude (pour la carte) :</label>
             <input type="number" step="any" id="lat" name="lat" required>
-            
             <label for="lon">Longitude (pour la carte) :</label>
             <input type="number" step="any" id="lon" name="lon" required>
-
             <button type="submit">Ajouter l'enseigne</button>
         </form>
     </section>
 
     <section class="boycott-list">
         <h2>Enseignes à boycotter</h2>
-        <div id="entities-list" class="list-container">
-            </div>
+        <div id="entities-list" class="list-container"></div>
     </section>
 </div>

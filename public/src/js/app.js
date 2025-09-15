@@ -4,19 +4,25 @@
 import { initMap } from './map.js';
 import { initBlogPage } from './blog.js';
 import { initMissionsPage } from './missions.js';
-import { initRicPage } from './rics.js'; 
-import { initDashboard } from './dashboard.js'; 
-import { initLegalPage } from './legal.js'; // NOUVEAU: Importe la fonction pour la page légale
+import { initRicPage } from './rics.js';
+import { initDashboard } from './dashboard.js';
+import { initLegalPage } from './legal.js';
 import { initCvnuPage } from './cvnu.js';
+import { initSmartContractPage } from './smartContract.js';
 import { initCvnuModal } from './modalCvnu.js';
+import { initOrganisationPage } from './timeline.js';
+import { initPlaygroundPage } from './playground.js';
+import { initMapModal } from './modalMap.js';
+
 /**
  * Fonction principale d'initialisation de l'application au chargement de la page.
  */
 function initializeApp() {
     loadAsideMenu();
-    attachNavigationEvents(); // NOUVEAU: Appelle la fonction d'attachement d'événements
+    attachNavigationEvents();
     loadPage('home');
-    initCvnuModal(); // NOUVEAU: Initialise le comportement du modal CVNU
+    initCvnuModal();
+    initMapModal();
 
     const loadingScreen = document.querySelector('.loading-screen');
     if (loadingScreen) {
@@ -39,14 +45,16 @@ function loadAsideMenu() {
             <ul>
                 <li><a href="#" data-page="home">Accueil</a></li>
                 <li><a href="#" data-page="dashboard">Tableau de bord</a></li>
-                <li><a href="#" data-page="cvnu">cvnu</a></li>
-                <li><a href="#" data-page="ric">RIC</a></li>
-                <li><a href="#" data-page="map">Carte</a></li>
-                <li><a href="#" data-page="blog">Blog</a></li>
-                <li><a href="#" data-page="missions">Missions</a></li> 
-                <li><a href="#" data-page="organisation">Organisation</a></li>
-                <li><a href="#" data-page="contacts">Contacts</a></li>
                 <li><a href="#" data-page="affaires">Affaires</a></li>
+                <li><a href="#" data-page="missions">Missions</a></li>
+                <li><a href="#" data-page="playground">playground</a></li>
+                <li><a href="#" data-page="ric">RIC</a></li>
+                <li><a href="#" data-page="smartContract">Smart Contract</a></li>
+                <li><a href="#" data-page="blog">Blog</a></li>
+                <li><a href="#" data-page="map">Carte</a></li>
+                <li><a href="#" data-page="cvnu">CV Numérique</a></li>
+                <li><a href="#" data-page="contacts">Contacts</a></li>
+                <li><a href="#" data-page="organisation">Organisation</a></li>
             </ul>
         `;
     }
@@ -56,14 +64,19 @@ function loadAsideMenu() {
  * Attache les écouteurs d'événements de clic aux liens de navigation.
  */
 function attachNavigationEvents() {
-    // Sélectionne tous les liens de l'aside et du footer
     const allLinks = document.querySelectorAll('.main-aside a, .app-footer a');
     allLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const pageName = e.target.dataset.page;
             if (pageName) {
-                loadPage(pageName);
+                if (pageName === 'map' && e.target.closest('.app-footer')) {
+                    initMapModal();
+                } else if (pageName === 'map') {
+                    loadPage('map');
+                } else {
+                    loadPage(pageName);
+                }
             }
         });
     });
@@ -76,9 +89,7 @@ function attachNavigationEvents() {
 async function loadPage(pageName) {
     const mainContent = document.getElementById('main-content');
     const asideLinks = document.querySelectorAll('.main-aside a');
-    const footerLinks = document.querySelectorAll('.app-footer a');
 
-    // Mise à jour de la classe 'active' pour les liens de l'aside
     asideLinks.forEach(link => {
         link.classList.toggle('active', link.dataset.page === pageName);
     });
@@ -95,23 +106,33 @@ async function loadPage(pageName) {
             case 'dashboard':
                 initDashboard();
                 break;
-            case 'cvnu': // NOUVEAU: Cas pour la page CVNU
-                initCvnuPage();
+            case 'playground':
+                initPlaygroundPage();
                 break;
             case 'ric':
                 initRicPage();
                 break;
             case 'map':
-                initMapPage();
+                const data = await fetchAllData();
+                initMap(data); 
                 break;
-        case 'blog':
-            initBlogPage(); // L'appel est déjà en place
-            break;
+            case 'cvnu':
+                initCvnuPage();
+                break;
+            case 'blog':
+                initBlogPage();
+                break;
             case 'missions':
                 initMissionsPage();
                 break;
+            case 'smartContract':
+                initSmartContractPage();
+                break;
             case 'legal':
-                initLegalPage(); // NOUVEAU: Appel à la fonction d'initialisation de la page légale
+                initLegalPage();
+                break;
+            case 'organisation':
+                initOrganisationPage();
                 break;
             default:
                 console.log(`Page ${pageName} chargée, pas de fonction d'initialisation spécifique.`);
@@ -126,94 +147,28 @@ async function loadPage(pageName) {
 
 async function fetchAllData() {
     try {
-        const [
-            databaseResponse,
-            cameraResponse,
-            ricsResponse,
-            boycottsResponse
-        ] = await Promise.all([
-            fetch('/database.json'),
-            fetch('/api/public-cameras'),
-            fetch('/api/rics'),
-            fetch('/api/boycotts')
-        ]);
-        
-        const data = databaseResponse.ok ? await databaseResponse.json() : {};
-        const cameraPoints = cameraResponse.ok ? await cameraResponse.json() : [];
-        const ricsData = ricsResponse.ok ? await ricsResponse.json() : [];
-        const boycottsData = boycottsResponse.ok ? await boycottsResponse.json() : [];
-        
-        return {
-            boycotts: boycottsData || data.boycotts || [],
-            prefectures: data.prefectures || [],
-            telegramGroups: data.telegram_groups || [],
-            manifestationPoints: data.manifestation_points || [],
-            strategicLocations: data.strategic_locations || [],
-            roundaboutPoints: data.roundabout_points || [],
-            portePoints: data.porte_points || [],
-            elyseePoint: data.elysee_point,
-            cameraPoints: cameraPoints,
-            mairies: data.mairies || [],
-            rics: ricsData || []
-        };
+        const response = await fetch('/database.json');
+        if (!response.ok) {
+            throw new Error(`Erreur de chargement de la base de données : ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data;
     } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
-        return { boycotts: [], prefectures: [], telegramGroups: [], manifestationPoints: [], strategicLocations: [], roundaboutPoints: [], portePoints: [], elyseePoint: null, cameraPoints: [], mairies: [], rics: [] };
-    }
-}
-
-// Renommage de la fonction d'initialisation de la carte pour la cohérence
-async function initMapPage() {
-    console.log("Initialisation de la page map...");
-    try {
-        const data = await fetchAllData();
-        const mapContainer = document.getElementById('map');
-        if (mapContainer && typeof initMap === 'function') {
-            initMap(data.boycotts, data.prefectures, data.telegramGroups, data.manifestationPoints, data.strategicLocations, data.roundaboutPoints, data.portePoints, data.elyseePoint, data.cameraPoints, data.mairies);
-        } else {
-            console.error('Erreur: Le conteneur de carte ou la fonction initMap est manquant.');
-        }
-
-        const form = document.getElementById('new-boycott-form');
-        if (form) {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(form);
-                const newData = Object.fromEntries(formData.entries());
-
-                const newEntity = {
-                    name: newData.name,
-                    type: newData.type,
-                    description: newData.description,
-                    locations: [{ lat: parseFloat(newData.lat), lon: parseFloat(newData.lon) }]
-                };
-
-                const response = await fetch('/api/boycotts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newEntity)
-                });
-
-                if (response.ok) {
-                    alert('Enseigne ajoutée avec succès !');
-                    loadPage('map');
-                } else {
-                    alert('Erreur lors de l’ajout de l’enseigne.');
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
+        return {};
     }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 
-// Les fonctions globales sont déconseillées mais sont nécessaires pour les appels onclick dans le HTML existant
-// La bonne pratique est d'utiliser des écouteurs d'événements comme dans attachNavigationEvents()
 window.loadPage = loadPage;
 window.initRicPage = initRicPage;
-window.initmapPage = initMapPage;
+window.initMap = initMap;
 window.initBlogPage = initBlogPage;
 window.initMissionsPage = initMissionsPage;
-window.initCvnuPage = initCvnuPage; // Rendre initCvnuPage globale pour le modal
+window.initSmartContractPage = initSmartContractPage;
+window.initCvnuPage = initCvnuPage;
+window.initPlaygroundPage = initPlaygroundPage;
+window.initLegalPage = initLegalPage;
+window.initOrganisationPage = initOrganisationPage;
+window.initMapModal = initMapModal;
