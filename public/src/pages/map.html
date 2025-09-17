@@ -1,13 +1,22 @@
 <div class="page-container">
     <header class="page-header">
         <h1>Stratégie de Boycottage et Économie Circulaire</h1>
+        <h2>Carte de la manifestation</h2>
         <p>Participez activement en redirigeant vos achats pour soutenir une économie locale et une caisse de manifestation citoyenne.</p>
     </header>
 
     <section class="map-section">
-        <h2>Carte de la manifestation</h2>
+        <aside class="map-legend-aside">
+            <div id="map-categories-legend" class="map-legend">
+                <h4>Catégories</h4>
+                <ul id="legend-list-categories"></ul>
+            </div>
+            <div id="map-items-legend" class="map-legend" style="display: none;">
+                <h4>Points de données</h4>
+                <ul id="legend-list-items"></ul>
+            </div></aside>
         <div id="map"></div>
-        
+
         <div class="map-controls">
             <div class="map-filter">
                 <label for="geographical-level-filter">Filtrer par niveau de scrutin:</label>
@@ -21,11 +30,37 @@
                     <option value="local">Local</option>
                 </select>
             </div>
-            <div id="map-legend" class="map-legend">
-                <h4>Légende (Cliquez pour filtrer)</h4>
-                <ul id="legend-list"></ul>
+
+        <div id="satellite-filters" class="map-filter">
+            <h4>Couches Satellites</h4>
+            <button id="google-auth-btn">Connecter Google Earth Engine</button>
+            <button id="google-auth-btn" class="action-btn">Connecter GEE</button>
+            <ul id="satellite-list">
+                </ul>
+        </div>
+        
+        <div id="satellite-settings-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2 id="settings-modal-title">Paramètres de la couche</h2>
+                <div id="settings-modal-body">
+                    </div>
+                <button id="apply-settings-btn" class="action-btn">Appliquer</button>
             </div>
         </div>
+
+        <div id="users-cv">
+            <div id="database.users_cv">#user_#</div>
+            <div id="database.users_cv">#user_#</div>
+            <div id="database.users_cv">#user_#</div>
+            <div id="database.users_cv">#user_#</div>
+        </div>
+        </div>
+    </section>
+
+    <section class="map-timeline">
+        <h2>Chronologie des événements</h2>
+        <div id="timeline-container"></div>
     </section>
 
     <section class="add-boycott-form">

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="src/css/ipcam.css">
     
     <link rel="stylesheet" href="src/css/rics.css">
-    <link rel="stylesheet" href="src/css/blog.css">
+    <link rel="stylesheet" href="src/css/journal.css">
     <link rel="stylesheet" href="src/css/cvnu.css">
     <link rel="stylesheet" href="src/css/legal.css">
     <link rel="stylesheet" href="src/css/smartContract.css">
@@ -21,21 +21,28 @@
     <link rel="stylesheet" href="src/css/map-styles.css">
     <link rel="stylesheet" href="src/css/modalCvnu.css">
     <link rel="stylesheet" href="src/css/modalMap.css">
-
+    <link rel="stylesheet" href="src/css/modalLegend.css">
+    <link rel="stylesheet" href="src/css/chronologie.css">
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+<body>
+<body>
 <body>
 <div class="app">
     <header class="app-header">
         <div class="logo-container">
-            <h2 class="app-title">Plateforme Citoyenne</h2>
+            <a href="#" data-page="home" class="header-home-link">
+                <h2 class="app-title"><span class="home-icon"><i class="fas fa-home"></i></span> Plateforme Citoyenne</h2>
+            </a>
         </div>
         <div class="user-menu-container">
-            <button class="user-profile-btn" onclick="toggleProfileMenu()">
+            <button class="user-profile-btn" id="user-profile-btn">
                 <img src="https://ia-local.github.io/Manifest.910-2025/media/user-icon.png" alt="User Profile" class="user-icon">
             </button>
             <div id="profile-menu" class="profile-dropdown-menu">
                 <a href="#" id="open-cv-modal-btn">Mon profil CVNU</a>
-                <a href="#">Paramètres</a>
+                <a href="#" id="open-setup-modal-btn">Setup</a>
                 <a href="#">Déconnexion</a>
             </div>
         </div>
@@ -53,18 +60,26 @@
             </div>
         </main>
     </div>
+    
     <footer class="app-footer">
-        <div class="logo-container">
-            <h2 class="app-title">RoadMap</h2>
-            <h2 class="app-reform">
-            </h2>
+        <div class="footer-primary-link-container">
+            <a href="#" data-page="parametres" class="footer-link-fixed">
+                <i class="fas fa-cog"></i>
+            </a>
         </div>
-        <div class="logo-container">
-            <a href="#" data-page="legal" class="footer-link">Loi & Réforme</a>
+        <div class="footer-links-container">
+            <div class="logo-container">
+                <a href="#" data-page="legal" class="footer-link">Loi & Réforme</a>
+            </div>
+            <div class="logo-container">
+                <a href="#" id="open-map-modal-btn" class="footer-link">Carte</a>
+            </div>
+            <div class="ascii-timestamp-container">
+            <pre id="ascii-timestamp"></pre>
         </div>
-        <div class="logo-container">
-            <a href="#" id="open-map-modal-btn" class="footer-link">Map</a>
         </div>
+        <div class="footer-background-overlay"></div>
+    </footer>
     </footer>
 </div>
 
@@ -93,6 +108,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
+<script src="https://apis.google.com/js/platform.js" async defer></script>
 <script src="src/js/app.js" type="module"></script>
 </body>
 </html>

@@ -29,6 +29,10 @@
                     <option value="Terminée">Terminée</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="mission-rewards-input">Récompenses:</label>
+                <input type="text" id="mission-rewards-input" name="rewards">
+            </div>
             <button type="submit" class="action-btn">Enregistrer la mission</button>
             <button type="button" id="generate-mission-ai-btn" class="action-btn secondary-btn">Générer avec l'IA</button>
         </form>
@@ -40,13 +44,20 @@
         </div>
     </div>
 
-    <div id="mission-details" class="modal">
+    <div id="mission-details-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">&times;</span>
+            <span class="close-button">&times;</span>
             <h2 id="modal-mission-title"></h2>
-            <p id="modal-mission-description"></p>
+            <p id="modal-mission-full-description"></p>
             <p><strong>Statut :</strong> <span id="modal-mission-status"></span></p>
             <p><strong>Récompenses :</strong> <span id="modal-mission-rewards"></span></p>
         </div>
     </div>
 </section>
+<div id="detail-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2 id="modal-title"></h2>
+        <div id="modal-content"></div>
+    </div>
+</div>

@@ -1289,5 +1289,12 @@
     "action": "RENDER_HTML",
     "status": "SUCCESS",
     "name": "Monique"
+  },
+  {
+    "timestamp": "2025-09-16T18:50:31.881Z",
+    "type": "CV_PROCESSING",
+    "action": "PARSE_AND_STRUCTURE",
+    "status": "SUCCESS",
+    "data": "test"
   }
 ]

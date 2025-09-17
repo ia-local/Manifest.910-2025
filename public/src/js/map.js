@@ -1,13 +1,16 @@
 // Fichier : public/src/js/map.js
-// Ce fichier gère l'initialisation et l'affichage de la carte Leaflet.
 import { openIpCamModal } from './ipCam.js';
-
+import { initChronologieFilter } from './chronologie.js'; 
+import { openModalLegend } from './modalLegend.js';
+import { initSatelliteLayer } from './satelliteLayer.js';
 let map;
 let markerLayers = {};
+let geeLayers = {}; // Ajout d'un conteneur pour les couches GEE
 let mapInitialized = false;
 let allData = {};
+let activeGeographicalLevel = 'all';
 
-// --- Définition des icônes personnalisées ---
+// Définition des icônes personnalisées (inchangées)
 const manifestationIcon = L.icon({ iconUrl: 'src/img/manifestation-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
 const mairieIcon = L.icon({ iconUrl: 'src/img/mairie-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
 const prefectureIcon = L.icon({ iconUrl: 'src/img/pref.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
@@ -32,6 +35,19 @@ const industrieIcon = L.icon({ iconUrl: 'src/img/industry.png', iconSize: [32, 3
 const agricoleIcon = L.icon({ iconUrl: 'src/img/agricole-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
 const economieIcon = L.icon({ iconUrl: 'src/img/banque_de_france.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
 const satelliteIcon = L.icon({ iconUrl: 'src/img/satellite.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const orangeIcon = L.icon({ iconUrl: 'src/img/Orange.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const sfrIcon = L.icon({ iconUrl: 'src/img/SFR.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const freeIcon = L.icon({ iconUrl: 'src/img/Free.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const bouyguesIcon = L.icon({ iconUrl: 'src/img/Bouygues.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const antennaIcon = L.icon({ iconUrl: 'src/img/antenna.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const telecomIcon = L.icon({ iconUrl: 'src/img/telecom.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const syndicatsIcon = L.icon({ iconUrl: 'src/img/syndicats.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const cgtIcon = L.icon({ iconUrl: 'src/img/cgt.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const foIcon = L.icon({ iconUrl: 'src/img/fo.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const solidaireIcon = L.icon({ iconUrl: 'src/img/solidaire.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const fsneaIcon = L.icon({ iconUrl: 'src/img/fsnea.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const dossierIcon = L.icon({ iconUrl: 'src/img/folder-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+const agIcon = L.icon({ iconUrl: 'src/img/ag-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
 
 const entityIcons = {
     'Leclerc': L.icon({ iconUrl: 'src/img/Leclerc.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] }),
@@ -56,7 +72,11 @@ const entityIcons = {
     'EUROPAFI': L.icon({ iconUrl: 'src/img/EUROPAFI.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] }),
     'Banque de France': banqueDeFranceIcon,
     'Camera Point': cameraIcon,
-    'McDonald\'s': L.icon({ iconUrl: 'src/img/McDonalds.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] })
+    'McDonald\'s': L.icon({ iconUrl: 'src/img/McDonalds.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] }),
+    'Orange': orangeIcon,
+    'SFR': sfrIcon,
+    'Free': freeIcon,
+    'Bouygues Telecom': bouyguesIcon
 };
 
 function getIconForCameraPoint(cameraType) {
@@ -82,33 +102,44 @@ function getIconForCategory(categoryName) {
         case 'Points Stratégiques': return L.icon({ iconUrl: 'src/img/roundabout-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
         case 'Réseaux Sociaux': return L.icon({ iconUrl: 'src/img/telegram.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
         case 'Industrie': return L.icon({ iconUrl: 'src/img/industrie-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
-        case 'Transport': return L.icon({ iconUrl: 'src/img/transport-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
-        case 'Artisanat': return L.icon({ iconUrl: 'src/img/artisanat-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
-        case 'Tourisme': return L.icon({ iconUrl: 'src/img/tourisme-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
         case 'Satellites': return L.icon({ iconUrl: 'src/img/satellites.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+        case 'Télécommunications': return L.icon({ iconUrl: 'src/img/telecom.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+        case 'Intersyndical': return syndicatsIcon;
+        case 'Dossiers de Preuves': return dossierIcon;
+        case 'Assemblée Générale': return agIcon;
         default: return L.icon({ iconUrl: 'src/img/default-icon.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
     }
 }
 
-/**
- * Fonction utilitaire pour obtenir l'icône appropriée pour un élément
- */
 function getIconForItem(item) {
+    if (item.syndicats && Array.isArray(item.syndicats) && item.syndicats.length > 0) {
+        const syndicat = item.syndicats[0].toLowerCase();
+        if (syndicat.includes('cgt')) return cgtIcon;
+        if (syndicat.includes('fo')) return foIcon;
+        if (syndicat.includes('solidaire') || syndicat.includes('sud')) return solidaireIcon;
+        if (syndicat.includes('fsnea')) return fsneaIcon;
+        return syndicatsIcon;
+    }
+    
+    if (item.type === 'Dossier' && item.category === 'Dossiers de Preuves') return dossierIcon;
+    if (item.type === 'AG' && item.category === 'Assemblée Générale') return agIcon;
+
     if (item.name && entityIcons[item.name]) {
         return entityIcons[item.name];
     }
-    if (item.type && (item.type === 'fixed' || item.type === 'panning' || item.type === 'dome' || item.type === 'guard' || item.type === 'ALPR')) {
-        return getIconForCameraPoint(item.type);
-    }
+    
     if (item.type) {
-        if (item.type.toLowerCase().includes('préfecture')) return prefectureIcon;
-        if (item.type.toLowerCase().includes('mairie')) return mairieIcon;
-        if (item.type.toLowerCase().includes('université')) return universityIcon;
-        if (item.type.toLowerCase().includes('hôpital')) return hospitalIcon;
-        if (item.type.toLowerCase().includes('banque') || item.type.toLowerCase().includes('crédit') || item.type.toLowerCase().includes('financière')) return banqueDeFranceIcon;
-        if (item.type.toLowerCase().includes('telegram')) return telegramIcon;
-        if (item.type.toLowerCase().includes('rond-point')) return roundaboutIcon;
-        if (item.type.toLowerCase().includes('porte')) return porteIcon;
+        const typeLower = item.type.toLowerCase();
+        if (typeLower.includes('préfecture')) return prefectureIcon;
+        if (typeLower.includes('mairie')) return mairieIcon;
+        if (typeLower.includes('université')) return universityIcon;
+        if (typeLower.includes('hôpital')) return hospitalIcon;
+        if (typeLower.includes('banque') || typeLower.includes('crédit') || typeLower.includes('financière') || typeLower.includes('europafi')) return banqueDeFranceIcon;
+        if (typeLower.includes('telegram')) return telegramIcon;
+        if (typeLower.includes('rond-point')) return roundaboutIcon;
+        if (typeLower.includes('porte')) return porteIcon;
+        if (typeLower.includes('orange') || typeLower.includes('sfr') || typeLower.includes('free') || typeLower.includes('bouygues')) return telecomIcon;
+        if (typeLower.includes('antenne')) return antennaIcon;
     }
     return getIconForCategory(item.category);
 }
@@ -129,7 +160,12 @@ function categorizeData(allData) {
         'Manifestation': { icon: getIconForCategory('Manifestation'), items: [] },
         'Points Stratégiques': { icon: getIconForCategory('Points Stratégiques'), items: [] },
         'Réseaux Sociaux': { icon: getIconForCategory('Réseaux Sociaux'), items: [] },
-        'Industrie': { icon: getIconForCategory('Industrie'), items: [] }
+        'Industrie': { icon: getIconForCategory('Industrie'), items: [] },
+        'Satellites': { icon: getIconForCategory('Satellites'), items: [] },
+        'Télécommunications': { icon: getIconForCategory('Télécommunications'), items: [] },
+        'Intersyndical': { icon: getIconForCategory('Intersyndical'), items: [] },
+        'Dossiers de Preuves': { icon: getIconForCategory('Dossiers de Preuves'), items: [] },
+        'Assemblée Générale': { icon: getIconForCategory('Assemblée Générale'), items: [] }
     };
 
     if (allData.boycotts) {
@@ -232,25 +268,74 @@ function categorizeData(allData) {
         });
     }
     
+    if (allData.satellites) {
+      allData.satellites.forEach(satellite => {
+        if (satellite.lat && satellite.lon) {
+            satellite.category = 'Satellites';
+            categories['Satellites'].items.push(satellite);
+        }
+      });
+    }
+
+    if (allData.telecoms) {
+        allData.telecoms.forEach(telecom => {
+            if (telecom.lat && telecom.lon) {
+                telecom.category = 'Télécommunications';
+                categories['Télécommunications'].items.push(telecom);
+            }
+        });
+    }
+    
+    if (allData.syndicats) {
+      allData.syndicats.forEach(syndicat => {
+        if (syndicat.lat && syndicat.lon) {
+            syndicat.category = 'Intersyndical';
+            categories['Intersyndical'].items.push(syndicat);
+        }
+      });
+    }
+
+    if (allData.affaires && allData.affaires.chronology) {
+        allData.affaires.chronology.forEach(event => {
+            if (event.lat && event.lon && event.type === 'Dossier') {
+                event.category = 'Dossiers de Preuves';
+                categories['Dossiers de Preuves'].items.push(event);
+            }
+            if (event.lat && event.lon && event.type === 'AG') {
+                event.category = 'Assemblée Générale';
+                categories['Assemblée Générale'].items.push(event);
+            }
+        });
+    }
+    
     return categories;
 }
 
 /**
- * Affiche la liste des sous-éléments d'une catégorie
+ * Affiche la liste des sous-éléments d'une catégorie et masque les catégories
  */
 function renderSublist(categoryName) {
-    const legendList = document.getElementById('legend-list');
-    legendList.innerHTML = '';
+    const legendCategories = document.getElementById('map-categories-legend');
+    const legendItems = document.getElementById('map-items-legend');
+    const legendListItems = document.getElementById('legend-list-items');
+    
+    // Masquer le menu des catégories et afficher le menu des points de données
+    legendCategories.style.display = 'none';
+    legendItems.style.display = 'block';
+
+    legendListItems.innerHTML = '';
     
     const backBtn = document.createElement('li');
     backBtn.className = 'legend-back-btn';
     backBtn.innerHTML = `<span class="legend-icon" style="background-image: url('${getIconForCategory(categoryName).options.iconUrl}')"></span> Retour`;
-    backBtn.addEventListener('click', renderCategories);
-    legendList.appendChild(backBtn);
+    backBtn.addEventListener('click', () => {
+        renderCategories();
+    });
+    legendListItems.appendChild(backBtn);
 
     const category = categorizeData(allData)[categoryName];
 
-    if (category && category.items.length > 0) {
+    if (category) {
         const showAllBtn = document.createElement('li');
         showAllBtn.className = 'legend-item show-all-btn';
         showAllBtn.setAttribute('data-category', categoryName);
@@ -258,16 +343,18 @@ function renderSublist(categoryName) {
         
         showAllBtn.addEventListener('click', () => {
             const layer = markerLayers[categoryName];
-            const isVisible = map.hasLayer(layer);
-            if (isVisible) {
-                map.removeLayer(layer);
-                showAllBtn.classList.remove('active');
-            } else {
-                map.addLayer(layer);
-                showAllBtn.classList.add('active');
+            if (layer) { // Correction de l'erreur
+                const isVisible = map.hasLayer(layer);
+                if (isVisible) {
+                    map.removeLayer(layer);
+                    showAllBtn.classList.remove('active');
+                } else {
+                    map.addLayer(layer);
+                    showAllBtn.classList.add('active');
+                }
             }
         });
-        legendList.appendChild(showAllBtn);
+        legendListItems.appendChild(showAllBtn);
     }
     
     if (category && category.items.length > 0) {
@@ -306,7 +393,12 @@ function renderSublist(categoryName) {
                 ulSublist.appendChild(liItem);
             }
         });
-        legendList.appendChild(ulSublist);
+        legendListItems.appendChild(ulSublist);
+    }
+    else if (category && category.items.length === 0) {
+        const noItemsLi = document.createElement('li');
+        noItemsLi.textContent = "Aucun point de données disponible.";
+        legendListItems.appendChild(noItemsLi);
     }
 }
 
@@ -314,8 +406,16 @@ function renderSublist(categoryName) {
  * Affiche la liste des catégories principales
  */
 function renderCategories() {
-    const legendList = document.getElementById('legend-list');
-    legendList.innerHTML = '';
+    const legendCategories = document.getElementById('map-categories-legend');
+    const legendItems = document.getElementById('map-items-legend');
+    const legendListCategories = document.getElementById('legend-list-categories');
+    
+    // Masquer le menu des points de données
+    legendItems.style.display = 'none';
+    // Afficher le menu des catégories
+    legendCategories.style.display = 'block';
+
+    legendListCategories.innerHTML = '';
     
     const categories = categorizeData(allData);
 
@@ -331,7 +431,7 @@ function renderCategories() {
             liCategory.addEventListener('click', () => {
                 renderSublist(categoryName);
             });
-            legendList.appendChild(liCategory);
+            legendListCategories.appendChild(liCategory);
         }
     }
     
@@ -356,20 +456,7 @@ function renderCategories() {
             showAllBtn.classList.add('active');
         }
     });
-    legendList.appendChild(showAllBtn);
-}
-
-/**
- * Fonction utilitaire pour trouver un marqueur dans une couche
- */
-function findMarkerInLayer(layer, lat, lon) {
-    let foundMarker = null;
-    layer.eachLayer(marker => {
-        if (marker.getLatLng().lat === lat && marker.getLatLng().lng === lon) {
-            foundMarker = marker;
-        }
-    });
-    return foundMarker;
+    legendListCategories.appendChild(showAllBtn);
 }
 
 /**
@@ -389,26 +476,29 @@ export function initMap(allDataPassed) {
 
     mapInitialized = true;
     
+    initChronologieFilter(map, markerLayers);
     const categorizedData = categorizeData(allData);
 
     for (const categoryName in categorizedData) {
         if (categorizedData.hasOwnProperty(categoryName)) {
             const category = categorizedData[categoryName];
-            if (category.items.length > 0) {
+            if (category && category.items.length > 0) {
                 const markersInLayer = [];
                 category.items.forEach(item => {
                     const icon = getIconForItem(item);
                     if (item.lat && item.lon) {
                         const marker = L.marker([item.lat, item.lon], { icon: icon });
-
                         let popupContent = `<b>${item.name || item.city}</b>`;
-                        if (item.type) popupContent += `<br>Type: ${item.type}`;
-                        if (item.description) popupContent += `<br>Description: ${item.description}`;
-                        if (item.city) popupContent += `<br>Ville: ${item.city}`;
-                        if (item.link) popupContent += `<br><a href="${item.link}" target="_blank">Rejoindre</a>`;
-                        if (item.video_link) {
-                            popupContent += `<br><a href="#" onclick="event.preventDefault(); window.openIpCamModal('${item.video_link}', 'Flux Vidéo - ${item.name || item.city}');">Voir le flux</a>`;
+                        if (item.syndicats) {
+                            popupContent += `<br>Syndicats: ${item.syndicats.join(', ')}`;
                         }
+                        if (item.description) {
+                             popupContent += `<br>${item.description}`;
+                        }
+                        if (item.type === 'Dossier' || item.type === 'AG') {
+                           popupContent += `<br><button onclick="openModalLegend('${item.id}', '${item.type}')">Voir le dossier</button>`;
+                        }
+                        
                         marker.bindPopup(popupContent);
                         markersInLayer.push(marker);
                     }
@@ -417,6 +507,105 @@ export function initMap(allDataPassed) {
             }
         }
     }
-
+    
     renderCategories();
+
+    for (const name in markerLayers) { 
+        map.removeLayer(markerLayers[name]);
+    }
+    
+    // Initialisation de la logique de la couche satellite
+    initSatelliteLayer(map, geeLayers, allData);
+
+    // Ajout de l'écouteur d'événement pour le bouton d'authentification Google
+    const googleAuthBtn = document.getElementById('google-auth-btn');
+    if (googleAuthBtn) {
+        googleAuthBtn.addEventListener('click', () => {
+            window.location.href = '/api/auth/google';
+        });
+    }
+}
+/**
+ * Génère et affiche la liste des satellites cliquables.
+ */
+async function renderSatelliteList() {
+    const satelliteListEl = document.getElementById('satellite-list');
+    if (!satelliteListEl) return;
+
+    const satellites = allData.satellites;
+    if (!satellites || satellites.length === 0) {
+        satelliteListEl.innerHTML = '<li>Aucun satellite disponible.</li>';
+        return;
+    }
+
+    satelliteListEl.innerHTML = satellites.map(satellite => `
+        <li class="satellite-item" data-id="${satellite.id}">
+            <span class="satellite-icon" style="background-image: url('${satelliteIconUrl}')"></span>
+            ${satellite.name}
+        </li>
+    `).join('');
+
+    document.querySelectorAll('.satellite-item').forEach(item => {
+        item.addEventListener('click', toggleSatelliteLayer);
+    });
+}
+
+/**
+ * Gère l'affichage ou la dissimulation de la couche satellite GEE.
+ */
+async function toggleSatelliteLayer(event) {
+    const satelliteId = event.currentTarget.dataset.id;
+    const item = event.currentTarget;
+    
+    if (item.classList.contains('active')) {
+        // Masquer la couche si elle est déjà active
+        if (geeLayers[satelliteId]) {
+            map.removeLayer(geeLayers[satelliteId]);
+            delete geeLayers[satelliteId];
+        }
+        item.classList.remove('active');
+        item.innerHTML = `<span class="satellite-icon" style="background-image: url('${satelliteIconUrl}')"></span>${allData.satellites.find(s => s.id === satelliteId).name}`;
+    } else {
+        // Afficher la couche
+        item.innerHTML = `<span class="satellite-icon" style="background-image: url('${satelliteIconUrl}')"></span>${allData.satellites.find(s => s.id === satelliteId).name} (Chargement...)`;
+        try {
+            const satellite = allData.satellites.find(s => s.id === satelliteId);
+            const response = await fetch(`/api/gee/tiles/${satelliteId}?bands=${satellite.bands.join(',')}`);
+            const data = await response.json();
+            
+            if (data.mapid && data.token) {
+                const geeTileLayer = L.tileLayer(`https://earthengine.googleapis.com/v1alpha/{mapid}/tiles/{z}/{x}/{y}?token={token}`, {
+                    attribution: 'Google Earth Engine',
+                    mapid: data.mapid,
+                    token: data.token,
+                    maxZoom: 20
+                }).addTo(map);
+                
+                geeLayers[satelliteId] = geeTileLayer;
+                item.classList.add('active');
+                item.innerHTML = `<span class="satellite-icon" style="background-image: url('${satelliteIconUrl}')"></span>${satellite.name} (Active)`;
+            } else {
+                throw new Error('Données de tuiles GEE invalides.');
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement de la couche GEE:', error);
+            item.innerHTML = `<span class="satellite-icon" style="background-image: url('${satelliteIconUrl}')"></span>Erreur de chargement`;
+            item.classList.remove('active');
+        }
+    }
+}
+
+/**
+ * Fonction utilitaire pour trouver un marqueur dans une couche
+ */
+function findMarkerInLayer(layer, lat, lon) {
+    let foundMarker = null;
+    if (layer) { // CORRECTION: Vérifier si la couche existe avant d'itérer
+        layer.eachLayer(marker => {
+            if (marker.getLatLng().lat === lat && marker.getLatLng().lng === lon) {
+                foundMarker = marker;
+            }
+        });
+    }
+    return foundMarker;
 }

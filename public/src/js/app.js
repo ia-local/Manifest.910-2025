@@ -1,8 +1,9 @@
 // Fichier : public/src/js/app.js
 // Ce fichier gère la navigation et l'initialisation des différentes pages de l'application.
 
+// --- Imports des modules de l'application ---
 import { initMap } from './map.js';
-import { initBlogPage } from './blog.js';
+import { initJournalPage } from './journal.js';
 import { initMissionsPage } from './missions.js';
 import { initRicPage } from './rics.js';
 import { initDashboard } from './dashboard.js';
@@ -13,16 +14,25 @@ import { initCvnuModal } from './modalCvnu.js';
 import { initOrganisationPage } from './timeline.js';
 import { initPlaygroundPage } from './playground.js';
 import { initMapModal } from './modalMap.js';
+import { initObserver } from './observerIa.js';
+import { initJournalModal } from './journalModal.js';
+import { initJournalAdminPage } from './journal-admin.js'; // Import pour la modal
+import { initTreasuryPage } from './treasury.js'; // Ajout pour la page Trésorerie
+
+import { initReseauPage } from './reseau.js'; // Ajoutez cet import
+import { initParametresPage } from './parametres.js'; // Ajoutez cet import
 
 /**
  * Fonction principale d'initialisation de l'application au chargement de la page.
  */
 function initializeApp() {
     loadAsideMenu();
+    attachProfileMenuEvent();
     attachNavigationEvents();
     loadPage('home');
     initCvnuModal();
     initMapModal();
+    initObserver();
 
     const loadingScreen = document.querySelector('.loading-screen');
     if (loadingScreen) {
@@ -31,6 +41,29 @@ function initializeApp() {
 }
 
 // --- Fonctions de navigation ---
+/**
+ * Attache l'écouteur d'événement pour le menu déroulant du profil.
+ */
+function attachProfileMenuEvent() {
+    const profileBtn = document.getElementById('user-profile-btn');
+    const profileMenu = document.getElementById('profile-menu');
+    
+    if (profileBtn && profileMenu) {
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
+                profileMenu.classList.remove('show');
+            }
+        });
+    } else {
+        console.error("Profile button or menu not found. Check your index.html.");
+    }
+}
+// Fichier : public/src/js/app.js
 
 /**
  * Charge le menu latéral de l'application.
@@ -40,48 +73,56 @@ function loadAsideMenu() {
     if (mainNavigation) {
         mainNavigation.innerHTML = `
             <div class="logo">
-                <h3>Plateforme Citoyenne</h3>
+                <h3>----</h3>
             </div>
-            <ul>
-                <li><a href="#" data-page="home">Accueil</a></li>
-                <li><a href="#" data-page="dashboard">Tableau de bord</a></li>
-                <li><a href="#" data-page="affaires">Affaires</a></li>
-                <li><a href="#" data-page="missions">Missions</a></li>
-                <li><a href="#" data-page="playground">playground</a></li>
-                <li><a href="#" data-page="ric">RIC</a></li>
-                <li><a href="#" data-page="smartContract">Smart Contract</a></li>
-                <li><a href="#" data-page="blog">Blog</a></li>
-                <li><a href="#" data-page="map">Carte</a></li>
-                <li><a href="#" data-page="cvnu">CV Numérique</a></li>
-                <li><a href="#" data-page="contacts">Contacts</a></li>
-                <li><a href="#" data-page="organisation">Organisation</a></li>
+            <ul id="aside-menu">
+                <li><a href="#" data-page="home"><i class="fas fa-home"></i><span>Accueil</span></a></li>
+                <li><a href="#" data-page="dashboard"><i class="fas fa-chart-line"></i><span>Tableau de bord</span></a></li>
+                <li><a href="#" data-page="affaires"><i class="fas fa-briefcase"></i><span>Affaires</span></a></li>
+                <li><a href="#" data-page="missions"><i class="fas fa-tasks"></i><span>Missions</span></a></li>
+                <li><a href="#" data-page="playground"><i class="fas fa-code"></i><span>Playground</span></a></li>
+                <li><a href="#" data-page="ric"><i class="fas fa-balance-scale"></i><span>RIC</span></a></li>
+                <li><a href="#" data-page="smartContract"><i class="fas fa-file-contract"></i><span>Smart Contract</span></a></li>
+                <li><a href="#" data-page="journal"><i class="fas fa-book"></i><span>Journal</span></a></li>
+                <li><a href="#" data-page="map"><i class="fas fa-map-marked-alt"></i><span>Carte</span></a></li>
+                <li><a href="#" data-page="cvnu"><i class="fas fa-id-card"></i><span>CV Numérique</span></a></li>
+                <li><a href="#" data-page="treasury"><i class="fas fa-wallet"></i><span>Trésorerie</span></a></li>
+                <li><a href="#" data-page="contacts"><i class="fas fa-address-book"></i><span>Contacts</span></a></li>
+                <li><a href="#" data-page="reseau"><i class="fas fa-network-wired"></i><span>Réseau</span></a></li> <li><a href="#" data-page="organisation"><i class="fas fa-sitemap"></i><span>Organisation</span></a></li>
+                <li><a href="#" data-page="parametres"><i class="fas fa-cog"></i><span>Paramètres</span></a></li>
             </ul>
         `;
     }
 }
-
 /**
  * Attache les écouteurs d'événements de clic aux liens de navigation.
+ * Gère les liens de l'aside et du footer.
  */
 function attachNavigationEvents() {
-    const allLinks = document.querySelectorAll('.main-aside a, .app-footer a');
-    allLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+        // Le sélecteur 'a[data-page]' cible tous les liens avec l'attribut data-page,
+        // qu'ils soient dans l'aside ou le footer.
+        const navLink = e.target.closest('a[data-page]');
+        
+        if (navLink) {
             e.preventDefault();
-            const pageName = e.target.dataset.page;
-            if (pageName) {
-                if (pageName === 'map' && e.target.closest('.app-footer')) {
-                    initMapModal();
-                } else if (pageName === 'map') {
-                    loadPage('map');
-                } else {
-                    loadPage(pageName);
-                }
+            const pageName = navLink.dataset.page;
+            
+            // Gérer un cas spécial pour la carte qui ouvre une modale
+            if (pageName === 'map' && navLink.id === 'open-map-modal-btn') {
+                initMapModal();
+            } else {
+                loadPage(pageName);
             }
-        });
+            
+            // Ferme le menu de profil s'il est ouvert après un clic sur un lien
+            const profileMenu = document.getElementById('profile-menu');
+            if (profileMenu) {
+                profileMenu.classList.remove('show');
+            }
+        }
     });
 }
-
 /**
  * Charge une page HTML de manière dynamique dans le contenu principal.
  * @param {string} pageName - Le nom de la page à charger (ex: 'home', 'map').
@@ -102,6 +143,9 @@ async function loadPage(pageName) {
         const html = await response.text();
         mainContent.innerHTML = html;
         
+        await new Promise(r => setTimeout(r, 10));
+        
+        // Exécuter la fonction d'initialisation spécifique à la page
         switch (pageName) {
             case 'dashboard':
                 initDashboard();
@@ -119,8 +163,8 @@ async function loadPage(pageName) {
             case 'cvnu':
                 initCvnuPage();
                 break;
-            case 'blog':
-                initBlogPage();
+            case 'journal':
+                initJournalPage();
                 break;
             case 'missions':
                 initMissionsPage();
@@ -134,11 +178,21 @@ async function loadPage(pageName) {
             case 'organisation':
                 initOrganisationPage();
                 break;
+            case 'treasury':
+                initTreasuryPage();
+                break;
+            case 'reseau':
+                initReseauPage();
+                break;
+            case 'parametres':
+                 console.log('Page des paramètres chargée.');
+                 initJournalModal();
+                 initParametresPage(); 
+                 break;
             default:
                 console.log(`Page ${pageName} chargée, pas de fonction d'initialisation spécifique.`);
                 break;
         }
-
     } catch (error) {
         console.error('Erreur lors du chargement de la page:', error);
         mainContent.innerHTML = `<div class="error-message"><h2>Erreur</h2><p>${error.message}</p></div>`;
@@ -162,9 +216,11 @@ async function fetchAllData() {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 window.loadPage = loadPage;
+window.initParametresPage = initParametresPage;
+window.initReseauPage = initReseauPage; // Corrected typo here
 window.initRicPage = initRicPage;
 window.initMap = initMap;
-window.initBlogPage = initBlogPage;
+window.initJournalPage = initJournalPage;
 window.initMissionsPage = initMissionsPage;
 window.initSmartContractPage = initSmartContractPage;
 window.initCvnuPage = initCvnuPage;
@@ -172,3 +228,5 @@ window.initPlaygroundPage = initPlaygroundPage;
 window.initLegalPage = initLegalPage;
 window.initOrganisationPage = initOrganisationPage;
 window.initMapModal = initMapModal;
+window.initJournalAdminPage = initJournalAdminPage;
+window.initTreasuryPage = initTreasuryPage;

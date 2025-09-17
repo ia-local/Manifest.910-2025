@@ -8,7 +8,8 @@ const { v4: uuidv4 } = require('uuid');
 
 const Groq = new IA({ apiKey: process.env.GROQ_API_KEY });
 const DATABASE_FILE_PATH = path.join(__dirname, '..', 'database.json');
-const SATELLITES_DATA_FILE = path.join(__dirname, '..', 'data', 'satellites.json');
+// La variable SATELLITES_DATA_FILE a été retirée car elle n'était pas utilisée ici.
+const SMART_CONTRACTS_DIR = path.join(__dirname, '..', 'public', 'src', 'sol');
 
 // Fonctions utilitaires de la base de données
 const readDatabaseFile = async () => {
@@ -49,6 +50,8 @@ const calculateAllocation = (skills) => {
     const averageScore = totalScore / skills.length;
     return Math.round(500 + (averageScore * 4500));
 };
+
+// --- API Endpoints ---
 
 // Point de terminaison pour l'API CV
 router.post('/api/generate-cv', async (req, res) => {
@@ -173,9 +176,8 @@ router.get('/api/redistribution', async (req, res) => {
 
 // Route pour les fichiers de smart contracts
 router.get('/api/sol-files', async (req, res) => {
-    const solFilesDir = path.join(__dirname, '..', 'public', 'src', 'sol');
     try {
-        const files = await fs.readdir(solFilesDir);
+        const files = await fs.readdir(SMART_CONTRACTS_DIR);
         res.json(files.filter(file => file.endsWith('.sol')));
     } catch (error) {
         console.error("Erreur lors de la lecture des fichiers .sol:", error);
@@ -186,7 +188,7 @@ router.get('/api/sol-files', async (req, res) => {
 // Route pour le contenu des fichiers Solidity
 router.get('/api/sol-content/:filename', async (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '..', 'public', 'src', 'sol', filename);
+    const filePath = path.join(SMART_CONTRACTS_DIR, filename);
 
     try {
         const content = await fs.readFile(filePath, 'utf8');
@@ -197,5 +199,7 @@ router.get('/api/sol-content/:filename', async (req, res) => {
         res.status(404).send('Fichier non trouvé.');
     }
 });
+
+module.exports = exports; // CORRECTION: Remplacer par 'module.exports = router'
 
 module.exports = router;

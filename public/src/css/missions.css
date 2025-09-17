@@ -17,6 +17,58 @@
   color: #555;
 }
 
+.mission-controls {
+  margin-bottom: 20px;
+}
+
+.action-btn, .secondary-btn {
+  padding: 10px 15px;
+  border-radius: 5px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.action-btn {
+  background-color: #3f8410;
+  color: white;
+}
+
+.action-btn:hover {
+  background-color: #35720d;
+}
+
+.secondary-btn {
+  background-color: #e2e2e2;
+  color: #333;
+}
+
+.secondary-btn:hover {
+  background-color: #d0d0d0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+}
+
 .mission-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -88,7 +140,8 @@
   position: relative;
 }
 
-.close-btn {
+/* Correction de la classe du bouton de fermeture */
+.close-button {
   color: #aaa;
   float: right;
   font-size: 28px;
@@ -96,8 +149,8 @@
   cursor: pointer;
 }
 
-.close-btn:hover,
-.close-btn:focus {
+.close-button:hover,
+.close-button:focus {
   color: black;
   text-decoration: none;
 }

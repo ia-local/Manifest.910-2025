@@ -10,20 +10,22 @@ const YAML = require('yamljs');
 const Web3 = require('web3');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
-const blogRouter = require('./blog.js');
 const cvnuRouter = require('./cvnu.js');
 const reformeRouter = require('./reforme.js');
 const missionsRouter = require('./routes/quests.js');
 const mapRouter = require('./routes/map-router.js');
-const smartContractRouter = require('./routes/smartContract.js');
+const smartContractRouter = require('./routes/smartContract-router.js'); 
 const ee = require('@google/earthengine');
 const cors = require('cors');
 const sassMiddleware = require('node-sass-middleware');
+const operator = require('./server_modules/operator.js');
+
+// --- NOUVEAU: Importation du routeur Journal ---
+const journalRouter = require('./routes/journal.js');
 
 // Clés API
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const EE_PRIVATE_KEY_PATH = './private-key.json';
-let EE_PRIVATE_KEY = {};
+
 
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 const app = express();
@@ -35,9 +37,86 @@ let chatLog = {};
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
-let rolesAssistant = { assistant: { content: "Je suis un assistant IA utile et informatif." } };
-let rolesUser = { user: { content: "Je suis un utilisateur." } };
+const EE_PRIVATE_KEY_PATH = './private-key.json';
+
+
+let EE_PRIVATE_KEY = {};
+// Fonction pour charger la clé privée GEE
+async function loadEarthEnginePrivateKey() {
+    try {
+        const privateKeyData = await fs.readFile(EE_PRIVATE_KEY_PATH, 'utf8');
+        EE_PRIVATE_KEY = JSON.parse(privateKeyData);
+        console.log('Clé privée Earth Engine chargée avec succès.');
+    } catch (error) {
+        console.error('Erreur lors du chargement de la clé privée Earth Engine:', error);
+        process.exit(1);
+    }
+}
+// Fonction pour initialiser et s'authentifier auprès de l'API GEE
+async function authenticateEarthEngine() {
+    return new Promise((resolve, reject) => {
+        ee.data.authenticateViaPrivateKey(
+            EE_PRIVATE_KEY,
+            () => {
+                ee.initialize(null, null, resolve, reject);
+                console.log('Authentification et initialisation de Google Earth Engine réussies.');
+            },
+            (err) => {
+                console.error('Erreur d\'authentification de Google Earth Engine:', err);
+                reject(err);
+            }
+        );
+    });
+}
+// Nouvelle route API pour les tuiles GEE
+app.get('/api/gee/tiles/:id', async (req, res) => {
+    const satelliteId = req.params.id;
+    const { bands, cloud_percentage } = req.query;
+
+    // Assurez-vous que la base de données est chargée avant de l'utiliser
+    if (!database.satellites) {
+        return res.status(503).json({ error: 'La base de données des satellites n\'est pas encore chargée.' });
+    }
+    
+    const satellitesData = database.satellites;
+    const satellite = satellitesData.find(s => s.id === satelliteId);
+
+    if (!satellite) {
+        return res.status(404).json({ error: 'Satellite non trouvé.' });
+    }
+
+    // Convertir les bandes en tableau
+    const bandsArray = bands ? bands.split(',') : satellite.bands;
+
+    try {
+        // Sélectionner la collection d'images GEE
+        const collection = ee.ImageCollection(satelliteId)
+            .filterDate('2025-01-01', '2025-09-17') // Exemple de filtre de date
+            .filter(ee.Filter.lt(satellite.sort, parseFloat(cloud_percentage || 20))); // Filtrer par pourcentage de nuages
+
+        const image = collection.mosaic().select(bandsArray);
+        const visParams = {
+            min: 0,
+            max: 3000, // Ajustez en fonction des bandes
+            bands: bandsArray
+        };
+
+        image.getMap(visParams, (mapId) => {
+            if (mapId.error) {
+                return res.status(500).json({ error: mapId.error });
+            }
+            res.json({
+                mapid: mapId.mapid,
+                token: mapId.token,
+                satelliteName: satellite.name
+            });
+        });
+
+    } catch (error) {
+        console.error('Erreur lors de la génération des tuiles GEE:', error);
+        res.status(500).json({ error: 'Échec de la génération des tuiles GEE.' });
+    }
+});
 
 app.use(express.json());
 app.use(cors());
@@ -55,31 +134,96 @@ app.use(
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/roles', express.static(path.join(__dirname, 'docs', 'roles')));
 
+let rolesSystem = { system: { content: "Vous êtes un assistant IA généraliste." } };
+let rolesAssistant = { assistant: { content: "Je suis un assistant IA utile et informatif." } };
+let rolesUser = { user: { content: "Je suis un utilisateur." } };
+
 // Montez les routeurs
 app.use('/missions', missionsRouter);
-app.use('/blog', blogRouter);
+app.use('/journal', journalRouter);
 app.use('/cvnu', cvnuRouter);
+app.use('/map', mapRouter);
 app.use('/reforme', reformeRouter);
 app.use('/smartContract', smartContractRouter);
-app.use('/map', mapRouter); // Monte le nouveau routeur de la carte
 
 const STATS_FILE = path.join(__dirname, 'data', 'stats.json');
 const SATELLITES_DATA_FILE = path.join(__dirname, 'data', 'satellites.json');
 
 const ORGANIZER_GROUP_ID = "https://ia-local.github.io/Manifest.910-2025"; 
 
-app.get('/api/prefectures', (req, res) => {
-    res.json(database.prefectures);
+// --- Routes pour l'opérateur IA ---
+// --- NOUVELLES ROUTES POUR L'OPÉRATEUR IA ---
+app.get('/api/operator/summary', async (req, res) => {
+    try {
+        const summary = await operator.generateSummary();
+        res.json({ summary });
+    } catch (error) {
+        res.status(500).json({ error: 'Échec de la génération du résumé.' });
+    }
 });
 
-const gouv_lawArticles = {};
-app.get('/api/telegram-sites', (req, res) => { res.json(database.telegram_groups); });
+app.get('/api/operator/plan', async (req, res) => {
+    try {
+        const plan = await operator.generateDevelopmentPlan();
+        res.json({ plan });
+    } catch (error) {
+        res.status(500).json({ error: 'Échec de la génération du plan.' });
+    }
+});
+app.post('/api/operator/chat', async (req, res) => {
+    const { message } = req.body;
+    if (!message) {
+        return res.status(400).json({ error: 'Message manquant.' });
+    }
+    try {
+        const aiResponse = await operator.getGroqChatResponse(message);
+        res.json({ response: aiResponse });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur lors de la communication avec l\'IA.' });
+    }
+});
+
+app.get('/api/prefectures', (req, res) => {
+    res.json(database.prefectures || []);
+});
+app.get('/api/mairies', (req, res) => {
+    res.json(database.mairies || []);
+});
+app.get('/api/roundabout-points', (req, res) => {
+    res.json(database.roundabout_points || []);
+});
+app.get('/api/porte-points', (req, res) => {
+    res.json(database.porte_points || []);
+});
+app.get('/api/strategic-locations', (req, res) => {
+    res.json(database.strategic_locations || []);
+});
+app.get('/api/syndicats', (req, res) => {
+    res.json(database.syndicats || []);
+});
+app.get('/api/telecoms', (req, res) => {
+    res.json(database.telecoms || []);
+});
+app.get('/api/satellites', async (req, res) => {
+    try {
+        const satellitesData = await readJsonFile(SATELLITES_DATA_FILE, []);
+        res.json(satellitesData);
+    } catch (error) {
+        console.error('Erreur lors de la lecture des données satellitaires:', error);
+        res.status(500).json({ error: 'Échec du chargement des données satellitaires.' });
+    }
+});
+
+app.get('/api/telegram-sites', (req, res) => { res.json(database.telegram_groups || []); });
+
 const swaggerDocumentPath = path.join(__dirname, 'api-docs', 'swagger.yaml');
 let swaggerDocument = {};
 try {
     swaggerDocument = YAML.load(swaggerDocumentPath);
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-} catch (error) { console.error('Erreur lors du chargement de la documentation Swagger:', error); }
+} catch (error) {
+    console.error('Erreur lors du chargement de la documentation Swagger:', error);
+}
 
 const DATABASE_FILE_PATH = path.join(__dirname, 'database.json');
 const BOYCOTT_FILE_PATH = path.join(__dirname, 'boycott.json');
@@ -95,7 +239,11 @@ async function writeDatabaseFile() {
             console.log('Début de l\'écriture de database.json...');
             await fs.writeFile(DATABASE_FILE_PATH, JSON.stringify(database, null, 2), { encoding: 'utf8' });
             console.log('Écriture de database.json terminée avec succès.');
-        } catch (error) { console.error('Erreur lors de l\'écriture de database.json:', error); } finally { isWriting = false; }
+        } catch (error) {
+            console.error('Erreur lors de l\'écriture de database.json:', error);
+        } finally {
+            isWriting = false;
+        }
     });
     return writeQueue;
 }
@@ -105,17 +253,35 @@ async function initializeDatabase() {
         const data = await fs.readFile(DATABASE_FILE_PATH, { encoding: 'utf8' });
         database = JSON.parse(data);
         console.log('Base de données chargée avec succès.');
-        if (!database.missions) { database.missions = []; await writeDatabaseFile(); }
+        if (!database.missions) {
+            database.missions = [];
+            await writeDatabaseFile();
+        }
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.warn('Le fichier database.json n\'existe pas, initialisation de la base de données vide.');
             database = {
-                financial_flows: [], affaires: { chronology: [] }, rics: [], taxes: [], boycotts: [],
-                entities: [], caisse_manifestation: { solde: 0, transactions: [] }, blockchain: { transactions: [] },
-                polls: [], organizers: [], beneficiaries: [], cv_contracts: [], cameras_points: [], blog_posts: [], missions: []
+                financial_flows: [],
+                affaires: { chronology: [] },
+                rics: [],
+                taxes: [],
+                boycotts: [],
+                entities: [],
+                caisse_manifestation: { solde: 0, transactions: [] },
+                blockchain: { transactions: [] },
+                polls: [],
+                organizers: [],
+                beneficiaries: [],
+                cv_contracts: [],
+                cameras_points: [], 
+                journal_posts: [], // --- NOUVEAU: Changement de 'blog_posts' en 'journal_posts' ---
+                missions: []
             };
             await writeDatabaseFile();
-        } else { console.error('Erreur fatale lors du chargement de database.json:', error); process.exit(1); }
+        } else {
+            console.error('Erreur fatale lors du chargement de database.json:', error);
+            process.exit(1);
+        }
     }
 }
 async function readJsonFile(filePath, defaultValue = {}) {
@@ -124,46 +290,131 @@ async function readJsonFile(filePath, defaultValue = {}) {
         const data = await fs.readFile(filePath, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        if (error.code === 'ENOENT') { console.warn(`Le fichier ${filePath} n'existe pas. Création d'un fichier vide/par défaut.`); await fs.writeFile(filePath, JSON.stringify(defaultValue, null, 2), 'utf8'); return defaultValue; }
+        if (error.code === 'ENOENT') {
+            console.warn(`Le fichier ${filePath} n'existe pas. Création d'un fichier vide/par défaut.`);
+            await fs.writeFile(filePath, JSON.stringify(defaultValue, null, 2), 'utf8');
+            return defaultValue;
+        }
         console.error(`Erreur de lecture du fichier ${filePath}:`, error);
         return defaultValue;
     }
 }
+
 async function writeJsonFile(filePath, data) {
     try {
         await fs.mkdir(path.dirname(filePath), { recursive: true });
         await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-    } catch (error) { console.error(`Erreur d'écriture du fichier ${filePath}:`, error); }
+    } catch (error) {
+        console.error(`Erreur d'écriture du fichier ${filePath}:`, error);
+    }
 }
 
 async function loadBoycottData() {
     try {
         boycottsData = await readJsonFile(BOYCOTT_FILE_PATH, { boycotts: [] });
         console.log('Données de boycottage chargées avec succès.');
-    } catch (error) { console.error('Erreur lors du chargement de boycott.json:', error); boycottsData = { boycotts: [] }; }
+    } catch (error) {
+        console.error('Erreur lors du chargement de boycott.json:', error);
+        boycottsData = { boycotts: [] };
+    }
 }
 async function loadSatellitesData() {
     try {
         satellitesData = await readJsonFile(SATELLITES_DATA_FILE, []);
-        console.log('Données satellitaires chargées avec succès.');
-    } catch (error) { console.error('Erreur lors du chargement de satellites.json:', error); satellitesData = []; }
+        res.json(satellitesData);
+    } catch (error) {
+        console.error('Erreur lors de la lecture des données satellitaires:', error);
+        res.status(500).json({ error: 'Échec du chargement des données satellitaires.' });
+    }
 }
-app.get('/api/public-cameras', async (req, res) => { res.json(database.cameras_points || []); });
-app.get('/api/blog/generate', async (req, res) => {
-    const topic = req.query.topic;
-    if (!topic) { return res.status(400).json({ error: 'Le paramètre "topic" est manquant.' }); }
-    try {
-        const [titleResponse, contentResponse, imageResponse] = await Promise.all([
-            groq.chat.completions.create({ messages: [{ role: 'user', content: `Génère un titre de blog sur le thème : ${topic}. Fais moins de 10 mots.` }], model: 'gemma2-9b-it' }),
-            groq.chat.completions.create({ messages: [{ role: 'user', content: `Rédige un article de blog sur le thème ${topic}. Formaté en HTML.` }], model: 'gemma2-9b-it' }),
-            Promise.resolve({ choices: [{ message: { content: 'https://ia-local.github.io/Manifest.910-2025/media/generated-image.jpg' } }] })
-        ]);
-        const newPost = { id: uuidv4(), title: titleResponse.choices[0].message.content, media: imageResponse.choices[0].message.content, article: contentResponse.choices[0].message.content, date: new Date().toISOString() };
-        if (database.blog_posts) { database.blog_posts.push(newPost); await writeDatabaseFile(); }
-        res.json(newPost);
-    } catch (error) { console.error('Erreur lors de la génération du contenu du blog:', error); res.status(500).json({ error: 'Échec de la génération de l\'article.' }); }
+app.get('/api/public-cameras', async (req, res) => {
+    const cameraPoints = database.cameras_points || [];
+    res.json(cameraPoints);
 });
-app.get('/api/blog/posts', async (req, res) => { res.json(database.blog_posts || []); });
+
+// --- Remplacement des anciennes routes de blog par les routes journal ---
+app.get('/journal/api/journal/posts', async (req, res) => { res.json(database.journal_posts || []); });
+app.post('/journal/api/journal/posts', async (req, res) => {
+    const { title, content, media } = req.body;
+    if (!title || !content || !media) {
+        return res.status(400).json({ error: 'Titre, contenu ou média manquant.' });
+    }
+    
+    await readDatabase();
+    if (!database.journal_posts) {
+        database.journal_posts = [];
+    }
+    
+    const newPost = {
+        id: uuidv4(),
+        title: title,
+        media: media,
+        article: content,
+        date: new Date().toISOString()
+    };
+    
+    database.journal_posts.push(newPost);
+    await writeDatabase();
+    
+    res.status(201).json({ message: 'Article enregistré avec succès.', post: newPost });
+});
+
+// --- Ajout de la route pour la génération IA depuis journal.js ---
+app.get('/journal/api/journal/generate', async (req, res) => {
+    const topic = req.query.topic;
+    if (!topic) {
+        return res.status(400).json({ error: 'Le paramètre "topic" est manquant.' });
+    }
+    try {
+        // Logique de génération de contenu avec l'IA
+        const titleResponse = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: `Génère un titre d'article de journal sur le thème : ${topic}. Fais moins de 10 mots.` }],
+            model: 'gemma2-9b-it'
+        });
+        const title = titleResponse.choices[0].message.content;
+
+        const contentResponse = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: `Rédige un article de journal sur le thème '${topic}'. Utilise un style formel et pertinent pour l'actualité citoyenne. Le contenu doit être formaté en HTML.` }],
+            model: 'gemma2-9b-it'
+        });
+        const article = contentResponse.choices[0].message.content;
+
+        let mediaUrl = 'https://ia-local.github.io/Manifest.910-2025/media/generated-image.jpg'; // Image par défaut
+
+        if (genAI) {
+            try {
+                const imagePrompt = `Crée une image qui représente un concept clé de cet article de journal: '${title}'.`;
+                const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image-preview' });
+                const result = await model.generateContent(imagePrompt);
+                const response = result.response;
+                const parts = response.candidates[0].content.parts;
+                for (const part of parts) {
+                    if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+                        mediaUrl = `data:image/webp;base64,${part.inlineData.data}`;
+                    }
+                }
+            } catch (imageError) {
+                console.error("Erreur lors de la génération de l'image:", imageError);
+            }
+        }
+
+        const newPost = {
+            id: uuidv4(),
+            title: title,
+            media: mediaUrl,
+            article: article,
+            date: new Date().toISOString()
+        };
+        
+        res.json(newPost);
+
+    } catch (error) {
+        console.error('Erreur lors de la génération du contenu du journal:', error);
+        res.status(500).json({ error: 'Échec de la génération de l\'article.' });
+    }
+});
+
+
 async function getGroqChatResponse(promptInput, model, systemMessageContent) {
     try {
         const messages = [];
@@ -171,7 +422,10 @@ async function getGroqChatResponse(promptInput, model, systemMessageContent) {
         messages.push({ role: 'user', content: promptInput });
         const chatCompletion = await groq.chat.completions.create({ messages: messages, model: model, temperature: 0.7, max_tokens: 2048 });
         return chatCompletion.choices[0].message.content;
-    } catch (error) { console.error(`Erreur lors de la génération de la réponse IA (Groq model: ${model}):`, error); return 'Une erreur est survenue lors du traitement de votre demande. Veuillez réessayer plus tard.'; }
+    } catch (error) {
+        console.error(`Erreur lors de la génération de la réponse IA (Groq model: ${model}):`, error);
+        return 'Une erreur est survenue lors du traitement de votre demande. Veuillez réessayer plus tard.';
+    }
 }
 async function getLlmResponse(userMessage, role, conversationHistory) {
     const systemPrompt = `Tu es un assistant IA spécialisé dans l'analyse de dossiers de corruption, de blanchiment d'argent, d'évasion fiscale et de prise illégale d'intérêts. Tu as accès à une base de données de l'enquête parlementaire française. L'enquête se concentre sur les actions de hauts fonctionnaires d'État entre 2017 et 2027. Tu peux prendre plusieurs rôles en fonction des requêtes de l'utilisateur. Ton ton doit être factuel, précis, et basé sur les données de l'enquête. Les rôles possibles sont : Enquêteur, Journaliste, Avocat et Juge. Le rôle actuel est: ${role}.`;
@@ -180,7 +434,10 @@ async function getLlmResponse(userMessage, role, conversationHistory) {
     try {
         const chatCompletion = await groq.chat.completions.create({ messages: [{ role: 'system', content: systemPrompt }, ...chatHistory], model: 'gemma2-9b-it', stream: false });
         if (chatCompletion?.choices?.[0]?.message?.content) { return chatCompletion.choices[0].message.content; } else { return 'Aucune réponse générée par l\'IA.'; }
-    } catch (error) { console.error('Erreur lors de l\'appel à Groq:', error); return 'Une erreur est survenue lors de la communication avec l\'IA.'; }
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à Groq:', error);
+        return 'Une erreur est survenue lors de la communication avec l\'IA.';
+    }
 }
 app.post('/api/ai/generate-entity', async (req, res) => {
     const { query } = req.body;
@@ -191,7 +448,10 @@ app.post('/api/ai/generate-entity', async (req, res) => {
         const responseContent = chatCompletion?.choices?.[0]?.message?.content;
         const jsonResponse = JSON.parse(responseContent);
         res.json(jsonResponse);
-    } catch (error) { console.error('Erreur lors de la génération IA:', error); res.status(500).json({ error: 'Impossible de générer les données avec l\'IA.' }); }
+    } catch (error) {
+        console.error('Erreur lors de la génération IA:', error);
+        res.status(500).json({ error: 'Impossible de générer les données avec l\'IA.' });
+    }
 });
 app.post('/api/ai/chat', async (req, res) => {
     const { message } = req.body;
@@ -414,7 +674,7 @@ async function writeRicsFile() {
     try {
         await fs.writeFile(RICS_FILE_PATH, JSON.stringify(ricsData, null, 2), { encoding: 'utf8' });
         console.log('Écriture de rics.json terminée avec succès.');
-    } catch (error) { console.error(`Erreur d'écriture du fichier ${filePath}:`, error); }
+    } catch (error) { console.error('Erreur lors de l\'écriture de rics.json:', error); }
 }
 app.get('/api/rics', (req, res) => { res.json(ricsData); });
 app.post('/api/rics', async (req, res) => {

@@ -1,82 +1,93 @@
+// Fichier : public/src/js/cvnu.js
+
+/**
+ * Initialise les fonctionnalités de la page CV Numérique.
+ */
 export function initCvnuPage() {
     console.log("Initialisation de la page CVNU...");
 
-    const inputArea = document.getElementById('cv-content-input');
-    const generateBtn = document.getElementById('generate-cv-button');
-    const outputArea = document.getElementById('cvnu-output-area');
-    const renderHtmlBtn = document.getElementById('render-html-button');
-    const copyHtmlBtn = document.getElementById('copy-html-button');
+    // Gestion de la navigation entre les sections
+    const navLinks = document.querySelectorAll('.cvnu-nav ul li a');
+    const sections = document.querySelectorAll('.cvnu-section');
+    
+    // Vérification de la présence des éléments DOM
+    if (navLinks.length === 0 || sections.length === 0) {
+        console.error("Erreur: Les éléments de navigation du CVNU sont manquants.");
+        return;
+    }
 
-    let structuredCvData = null; // Stocke les données structurées du CV
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetSectionId = link.dataset.section;
 
-    generateBtn.addEventListener('click', async () => {
-        const cvContent = inputArea.value;
-        if (cvContent.trim() === '') {
-            alert("Veuillez coller le contenu de votre CV.");
-            return;
-        }
-
-        outputArea.innerHTML = '<div class="loading-spinner"><p>Analyse en cours...</p></div>';
-        renderHtmlBtn.style.display = 'none';
-        copyHtmlBtn.style.display = 'none';
-
-        try {
-            const response = await fetch('/cvnu/api/cv/parse-and-structure', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cvContent })
+            // Masquer toutes les sections
+            sections.forEach(section => {
+                section.classList.remove('active');
             });
 
-            if (!response.ok) {
-                throw new Error('Erreur lors de la structuration du CV.');
-            }
-
-            structuredCvData = await response.json();
-            outputArea.innerHTML = `<pre>${JSON.stringify(structuredCvData, null, 2)}</pre>`;
-            renderHtmlBtn.style.display = 'block';
-
-        } catch (error) {
-            console.error('Erreur:', error);
-            outputArea.innerHTML = `<div class="error-message"><p>Une erreur est survenue: ${error.message}</p></div>`;
-        }
-    });
-
-    renderHtmlBtn.addEventListener('click', async () => {
-        if (!structuredCvData) {
-            alert("Veuillez d'abord générer un CV structuré.");
-            return;
-        }
-
-        outputArea.innerHTML = '<div class="loading-spinner"><p>Rendu HTML en cours...</p></div>';
-
-        try {
-            const response = await fetch('/cvnu/api/cv/render-html', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cvData: structuredCvData })
+            // Retirer la classe 'active' de tous les liens de navigation
+            navLinks.forEach(navLink => {
+                navLink.classList.remove('active');
             });
 
-            if (!response.ok) {
-                throw new Error('Erreur lors du rendu HTML.');
-            }
-
-            const htmlContent = await response.text();
-            outputArea.innerHTML = htmlContent;
-            copyHtmlBtn.style.display = 'block';
-
-        } catch (error) {
-            console.error('Erreur:', error);
-            outputArea.innerHTML = `<div class="error-message"><p>Une erreur est survenue: ${error.message}</p></div>`;
-        }
-    });
-
-    copyHtmlBtn.addEventListener('click', () => {
-        const htmlContent = outputArea.innerHTML;
-        navigator.clipboard.writeText(htmlContent).then(() => {
-            alert('Contenu HTML copié dans le presse-papiers!');
-        }).catch(err => {
-            console.error('Erreur lors de la copie:', err);
-            alert('Échec de la copie.');
+            // Afficher la section ciblée et activer le lien
+            document.getElementById(targetSectionId).classList.add('active');
+            link.classList.add('active');
         });
     });
+
+    // --- Logique du formulaire d'analyse de CV ---
+    const form = document.getElementById('cv-analysis-form');
+    const inputArea = document.getElementById('cv-content-input');
+    const outputDisplay = document.getElementById('cv-output-display');
+
+    if (form && inputArea && outputDisplay) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const cvContent = inputArea.value;
+            if (cvContent.trim() === '') {
+                alert("Veuillez coller le contenu de votre CV.");
+                return;
+            }
+
+            outputDisplay.innerHTML = '<div class="loading-spinner"><p>Analyse en cours...</p></div>';
+
+            try {
+                const response = await fetch('/cvnu/api/cv/parse-and-structure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cvContent })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Erreur lors de la structuration du CV.');
+                }
+
+                const structuredCvData = await response.json();
+                const jsonOutput = JSON.stringify(structuredCvData, null, 2);
+                outputDisplay.innerHTML = `<pre>${jsonOutput}</pre>`;
+                
+                // Mettre à jour le score dans la carte de profil
+                const scoreElement = document.getElementById('profile-score');
+                if (scoreElement) {
+                    scoreElement.textContent = `Score CVNU : ${structuredCvData.score.toFixed(2)}`;
+                }
+                
+                // Mettre à jour le nom si disponible
+                const nameElement = document.getElementById('profile-name');
+                if (nameElement && structuredCvData.nom) {
+                    nameElement.textContent = structuredCvData.nom;
+                }
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                outputDisplay.innerHTML = `<div class="error-message"><p>Une erreur est survenue: ${error.message}</p></div>`;
+            }
+        });
+    } else {
+        console.error("Erreur: Les éléments du formulaire d'analyse de CV sont manquants.");
+    }
 }

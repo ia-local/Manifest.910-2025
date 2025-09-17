@@ -1,7 +1,8 @@
 // Fichier : main.js
 
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { analyzeImageWithAI } = require('./visionai.js');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -10,22 +11,29 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.js'), // <-- Ajout de cette ligne
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false
     }
   });
 
-  // Charge le fichier index.html de ton serveur Express
   win.loadURL('http://localhost:3000/index.html');
 
-  // Ouvre les outils de développement (DevTools)
   // win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
   createWindow();
+
+  ipcMain.on('analyze-image', async (event, imageUrl) => {
+    try {
+      const report = await analyzeImageWithAI(imageUrl);
+      event.sender.send('image-analysis-result', report);
+    } catch (error) {
+      event.sender.send('image-analysis-error', `Échec de l'analyse de l'image: ${error.message}`);
+    }
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

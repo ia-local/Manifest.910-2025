@@ -1,27 +1,10 @@
 {
-  "nom": "Monique",
+  "nom": "test",
   "email": "N/A",
-  "telephone": "06 20 31 31 36",
-  "adresse": "55, rue faubourg Saint-Honoré, Paris",
-  "resume": "20 ans d'expérience dans le commerce et 10 ans d'expérience dans l'industrie.",
-  "experiences": [
-    {
-      "titre": "N/A",
-      "entreprise": "N/A",
-      "duree": "20 ans",
-      "description": [
-        "Expérience dans le commerce"
-      ]
-    },
-    {
-      "titre": "N/A",
-      "entreprise": "N/A",
-      "duree": "10 ans",
-      "description": [
-        "Expérience dans l'industrie"
-      ]
-    }
-  ],
+  "telephone": "N/A",
+  "adresse": "N/A",
+  "resume": "N/A",
+  "experiences": [],
   "formation": [],
   "competences": [],
   "langues": [],

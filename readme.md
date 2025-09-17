@@ -78,3 +78,8 @@ Répression policière et financière
 https://www.youtube.com/shorts/wRFkPHFGr2c
 
 =======
+
+18 SEPTEMBRE
+===========
+
+https://www.youtube.com/shorts/MaO-g6PU9T0

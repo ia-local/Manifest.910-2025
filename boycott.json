@@ -1,7 +1,7 @@
 {
   "financial_flows": [],
   "affaires": {
-    "chronology": []
+  "chronology": []
   },
   "rics": [],
   "taxes": [
@@ -34,7 +34,7 @@
       "applicable_to": "campaign_finance"
     }
   ],
-    "boycotts": [
+  "boycotts": [
     {
       "id": "b_movie_1",
       "type": "movie",

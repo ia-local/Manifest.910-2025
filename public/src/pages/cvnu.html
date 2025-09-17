@@ -1,44 +1,64 @@
-<section class="page-section cvnu-page-container">
-    <h1>Générateur de CV Numérique Universel (CVNU)</h1>
-    <p>Le CVNU est au cœur de notre réforme. Il permet de valoriser vos compétences pour une allocation universelle équitable.</p>
-    
-    <div class="cvnu-info-section">
-        <h2>Le CVNU au service de la réforme</h2>
-        <div class="card">
-            <h3>Titre I : Redéfinition du Droit au Travail et à la Rémunération des Compétences</h3>
-            <p>Cette section réaffirme le droit au travail à vie à partir de l'âge de 16 ans, en l'adaptant à l'économie numérique.</p>
-
-            <h4>Article L3121-1 : Définition du Travail</h4>
-            <p>Le travail est désormais défini comme toute activité productive ou d'apprentissage générant une compétence valorisable et reconnue sur le CVNU. Cette définition élargit le concept de travail pour inclure les apprentissages indépendants, les projets personnels et les activités génératrices de compétences non traditionnelles.</p>
-
-            <h4>Article L3222-1 : Allocation Universelle des Compétences</h4>
-            <p>Un système d'allocation universelle des compétences est instauré, versée à chaque citoyen détenant un CVNU actif et validé. Le montant de cette allocation, compris entre 500€ et 5000€, est calculé en fonction de la progression des compétences enregistrées sur le CVNU, via un algorithme transparent et évolutif.</p>
+<div class="cvnu-profile-container">
+    <aside class="cvnu-aside-menu">
+        <div class="cvnu-profile-card">
+            <img src="https://ia-local.github.io/Manifest.910-2025/media/user-icon.png" alt="Avatar de l'utilisateur" class="profile-avatar">
+            <h3 id="profile-name">Nom Prénom</h3>
+            <p id="profile-score">Score CVNU : --</p>
         </div>
-    </div>
 
-    <div class="cvnu-input-area">
-        <h2>Générer votre CVNU</h2>
-        <p>Collez le texte de votre CV ci-dessous pour le structurer et l'analyser via notre IA.</p>
-        <form id="cvnu-form">
-            <div class="form-group">
-                <label for="cv-content-input">Contenu du CV :</label>
-                <textarea id="cv-content-input" placeholder="Collez le contenu de votre CV ici..." rows="15"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="numero-fiscal-input">Numéro Fiscal (simulation) :</label>
-                <input type="text" id="numero-fiscal-input" placeholder="Entrez un numéro fiscal" required>
-            </div>
-            <div class="form-actions">
-                <button type="submit" id="generate-cv-button" class="action-btn">Analyser et structurer le CV</button>
-            </div>
-        </form>
-    </div>
+        <nav class="cvnu-nav">
+            <ul>
+                <li><a href="#" data-section="initial-data" class="active">Données initiales</a></li>
+                <li><a href="#" data-section="cv-analysis">Analyse du CV</a></li>
+                <li><a href="#" data-section="rib">RIB</a></li>
+                <li><a href="#" data-section="digital-signature">Signature numérique</a></li>
+            </ul>
+        </nav>
+    </aside>
 
-    <div class="cvnu-output-area">
-        <h2>Résultat du CVNU</h2>
-        <div id="cvnu-output-display" class="output-display">
-            <p>Le résultat de l'analyse s'affichera ici.</p>
+    <main class="cvnu-main-content">
+        <div id="initial-data" class="cvnu-section active">
+            <h2>Données initiales du profil</h2>
+            <p>Ici, vous pouvez renseigner vos informations de base pour initialiser votre profil CVNU.</p>
+            <form id="initial-data-form">
+                <div class="form-group">
+                    <label for="full-name">Nom complet :</label>
+                    <input type="text" id="full-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="birth-date">Date de naissance :</label>
+                    <input type="date" id="birth-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="professional-goals">Objectifs professionnels :</label>
+                    <textarea id="professional-goals" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn primary">Enregistrer</button>
+            </form>
         </div>
-    </div>
 
-</section>
+        <div id="cv-analysis" class="cvnu-section">
+            <h2>Analyse du CV</h2>
+            <p>Collez le texte de votre CV pour que notre IA le structure et l'analyse.</p>
+            <div class="cvnu-input-area">
+                <form id="cv-analysis-form">
+                    <textarea id="cv-content-input" placeholder="Collez le contenu de votre CV ici..." rows="15"></textarea>
+                    <button type="submit" id="analyze-cv-btn" class="btn primary">Analyser</button>
+                </form>
+                <div id="cv-output-display" class="output-display">
+                    <p>Le résultat de l'analyse s'affichera ici.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="rib" class="cvnu-section">
+            <h2>RIB</h2>
+            <p>Mettez à jour vos informations bancaires.</p>
+            </div>
+
+        <div id="digital-signature" class="cvnu-section">
+            <h2>Signature numérique</h2>
+            <p>Générez et partagez votre signature numérique.</p>
+            </div>
+    </main>
+</div>
